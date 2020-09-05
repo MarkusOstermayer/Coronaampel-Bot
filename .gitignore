@@ -5,4 +5,4 @@
 config.json
 
 # Exclude the __pychache__ folder
-__pychache__/*
+__pycache__/*
