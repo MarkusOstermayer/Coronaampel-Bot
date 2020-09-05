@@ -1,0 +1,8 @@
+# exclude all sqlite-databases
+*.sqlite
+
+# Exclude the config
+config.json
+
+# Exclude the __pychache__ folder
+__pychache__/*
