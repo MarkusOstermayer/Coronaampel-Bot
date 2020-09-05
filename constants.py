@@ -45,7 +45,29 @@ class DATABASE():
                   "(region_id) VALUES "
                   "({0})")
 
+    REGIONS_QUERY = ("select regions.id, regions.name "
+                     "from users, regions, subscriptions "
+                     "where (subscriptions.regions_id = regions.id "
+                     "and subscriptions.users_id = {0});")
+    SEARCH_REGIONS = ("select name, id from regions where name like '%{0}%' "
+                      "and type = 'Gemeinde'")
 
+    LOOKUP_USER = "select id from users where users.id = {0};"
+
+    INSERT_USER = ("insert into users "
+                   "(id, name) values "
+                   "({0}, '{1}')")
+
+    SUB_USER_REGION_LOOKUP = ("select id from subscriptions "
+                              "where users_id = {0} "
+                              "and regions_id = {1}")
+
+    SUB_USER_REGION_INSERT = ("insert into subscriptions "
+                              "(users_id, regions_id) values "
+                              "({0}, {1});")
+    UBSUB_USER_REGION = ("DELETE FROM subscriptions "
+                         "WHERE (subscriptions.regions_id = {0} "
+                         "and subscriptions.users_id = {1});")
 # -----------------------------------------------------------------------------
 #                                                    SQLite
 # ----------------------------------------------------------------------------
@@ -72,8 +94,7 @@ CREATE TABLE IF NOT EXISTS warnings (
 CREATE_USERS_TABLE = """
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT,
-  level INTEGER
+  name TEXT
 );
 """
 
@@ -98,14 +119,21 @@ CREATE TABLE IF NOT EXISTS updates (
 class TelegramConstants():
     '''A class for storing telegram-constant values'''
     CMD_SUB = "/subscribe"
+    CMD_UNSUB = "//unsubscribe "
+
     CMD_SUB_ARG = "a city or region"
+    CMD_UNSUB_ARG = "<all>"
+
+    CMD_UNSUB_PREFIX = "unsubscribe"
+    CMD_SUB_PREFIX = "subscribe"
+
 
     START_MESSAGE = ("Hi 👋, this are the commands I know.\n"
                      "\n"
                      "<b>Subscribing and Unsubscribing</b>\n"
                      "/subscribe [Cityname] - "
                      "Used to register for an alert for a city\n"
-                     "/unsubscribe [Cityname] or /unsubscribe - "
+                     "/unsubscribe or /unsubscribe all - "
                      "Unsubscribe from one city or from all citys\n"
                      "/showsubscriptions - Show all active subscriptions")
 
@@ -118,4 +146,18 @@ class TelegramConstants():
                    "Please note, that the command {0} uses {1} as argument 🙂")
 
     MULTIPLE_REGIONS = ("Hmmm, I found the following regions🤔\n"
-                        "Just let me know what region you mean 😄")
+                        "Just let me know what region you mean 😄\n")
+    NO_REGION_FOUND = ("Hmmm, I found no region called {0}🤔\n"
+                       "Make sure you typed it correct 😄")
+    ALREADY_REGISTERED = ("Hmmm, it looks like you have already registered for "
+                          "this region🤔\n")
+    REGISTERED = "Okey, I have just registered you for this region😄"
+
+
+    REGISTERED_REGIONS = "Okey, I found the following registrations 😄"
+
+    NO_SUBSCRIPTIONS_FOUND = ("It looks like, that you do not have any "
+                              "subscriptions jet😄")
+    USER_SUBSCRIPTIONS = "You subscribted for the following regions: \n"
+
+    USER_UNSUBSCRIPTION = "You just unsubscribted from {0}"
