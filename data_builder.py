@@ -106,7 +106,9 @@ def insert_regions(sql_connection, json_response):
 
             execute_query(sql_connection, insert_region)
 
-            logging.info(logg_const.INSERT_SUCCESS.format(region_name=region['Name']))
+            logging.info(
+                logg_const.INSERT_SUCCESS.format(
+                    region_name=region['Name']))
 
 
 def insert_warnings(sql_connection, json_response):
@@ -141,11 +143,8 @@ def insert_warnings(sql_connection, json_response):
 
                 # Insert the first revision of the region to the database,
                 # this is the starting-level
-                warning_data = db_const.INSERT_WARNING.format(revision=1,
-                                                              kw=kw,
-                                                              region_id=region_id,
-                                                              alert_level=level,
-                                                              reason=reason)
+                warning_data = db_const.INSERT_WARNING.format(
+                    revision=1, kw=kw, region_id=region_id, alert_level=level, reason=reason)
                 execute_query(sql_connection, warning_data)
             else:
                 # It is already in the database, lets check if the warning
@@ -167,17 +166,15 @@ def insert_warnings(sql_connection, json_response):
 
                     # There is a new alert-level for the region, therefor we
                     # insert it with a new revision
-                    warn_update = db_const.INSERT_WARNING.format(revision=rev,
-                                                                 kw=kw,
-                                                                 region_id=region_id,
-                                                                 alert_level=level,
-                                                                 reason=reason)
+                    warn_update = db_const.INSERT_WARNING.format(
+                        revision=rev, kw=kw, region_id=region_id, alert_level=level, reason=reason)
                     execute_query(sql_connection, warn_update)
 
                     # Add the region to the update-list for use by other
                     # programs
                     region_id = int(region['GKZ'])
-                    add_update = db_const.ADD_UPDATE.format(region_id=region_id)
+                    add_update = db_const.ADD_UPDATE.format(
+                        region_id=region_id)
                     execute_query(sql_connection, add_update)
 
 
@@ -225,7 +222,7 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s:%(levelname)s - %(message)s',
                         level=logging.INFO,
                         handlers=[
-                                  logging.FileHandler("corona_bot.log"),
-                                  logging.StreamHandler()
-                                  ])
+                            logging.FileHandler("corona_bot.log"),
+                            logging.StreamHandler()
+                        ])
     main()

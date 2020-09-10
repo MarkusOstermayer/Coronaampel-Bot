@@ -51,6 +51,7 @@ def execute_query(connection, query):
 
 class TelegramBot():
     '''Class for the telegram-bot'''
+
     def __init__(self):
         '''Initiate the bot, register all the handlers and start polling'''
         logging.info(logg_const.STARTING_BOT)
@@ -130,9 +131,8 @@ class TelegramBot():
                                                                id=user_id))
 
             reg_id = command[1]
-            lookup_reg = db_const.SUB_USER_REGION_LOOKUP.format(user_id=user_id,
-                                                                region_id=reg_id
-                                                                )
+            lookup_reg = db_const.SUB_USER_REGION_LOOKUP.format(
+                user_id=user_id, region_id=reg_id)
 
             result = execute_query(self.sqlite_connection, lookup_reg)
 
@@ -140,17 +140,18 @@ class TelegramBot():
             if len(result) == 0:
                 # it not, than insert the usersubscription into the database
                 insert_query = db_const.SUB_USER_REGION_INSERT
-                result = execute_query(self.sqlite_connection,
-                                       insert_query.format(user_id=user_id,
-                                                           region_id=command[1])
-                                       )
+                result = execute_query(
+                    self.sqlite_connection, insert_query.format(
+                        user_id=user_id, region_id=command[1]))
 
                 # and tell him about the registration
                 response = tele_const.REGISTERED.format(region_name=command[2])
                 query.edit_message_text(text=response)
 
-                logging.info(logg_const.USER_SUB.format(user_name=username,
-                                                        region_name=command[2]))
+                logging.info(
+                    logg_const.USER_SUB.format(
+                        user_name=username,
+                        region_name=command[2]))
             else:
                 query.edit_message_text(text=tele_const.ALREADY_REGISTERED)
 
@@ -200,7 +201,8 @@ class TelegramBot():
         # called the way the suer put it in
         if(len(result) == 0):
 
-            respons = tele_const.NO_REGION_FOUND.format(region_name=region_name)
+            respons = tele_const.NO_REGION_FOUND.format(
+                region_name=region_name)
 
             context.bot.send_message(chat_id=update.effective_chat.id,
                                      text=respons)
