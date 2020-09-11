@@ -22,19 +22,19 @@ from constants import Logging as logg_const
 
 
 def execute_query(connection, query):
-    '''Execute Quarrys on the dabasase'''
+    '''Execute Quarry's on the database'''
 
     # get a cursor on the database to work with it
     cursor = connection.cursor()
     result = None
     try:
-        # execute the provided quarry on the database, commiting and logging
+        # execute the provided quarry on the database, committing and logging
         cursor.execute(query)
         result = cursor.fetchall()
         logging.info(db_const.QUERY_EXECUTED.format(quary=query))
 
     # throws an exception if something wrong was done, ether by violation
-    # of a database contraint or by an invalid quarry
+    # of a database constraint or by an invalid quarry
     except sqlite3.DatabaseError as exception:
         logging.error(db_const.EXCEPTION_MSG.format(exc_name=db_const.DB_ERROR,
                                                     quary=query))
@@ -52,18 +52,17 @@ def execute_query(connection, query):
 class TelegramBot():
     '''Class for the telegram-bot'''
 
-    def __init__(self):
+    def __init__(self, token):
         '''Initiate the bot, register all the handlers and start polling'''
         logging.info(logg_const.STARTING_BOT)
 
-        with open(const.CONFIG_FILE, "r") as file:
-            result = json.loads(file.read())
-        updater = Updater(token=result["telegram-token"], use_context=True)
+
+        updater = Updater(token=token, use_context=True)
         dispatcher = updater.dispatcher
 
         logging.info(logg_const.REGISTER_HANDLER)
 
-        # Telegram-Commandhandler
+        # Telegram-Command handler
         dispatcher.add_handler(CommandHandler('start', self.start))
         dispatcher.add_handler(CommandHandler('subscribe',
                                               self.subscribe_to_region))
@@ -73,7 +72,7 @@ class TelegramBot():
                                               self.list_all_regions))
 
         # Adding a Callback-handler for handling subscriptions and other
-        # inline-keybord elements
+        # inline-keyboard elements
         dispatcher.add_handler(CallbackQueryHandler(self.command_handler))
         logging.info(logg_const.REGISTERED_HANDLER)
 
@@ -90,9 +89,12 @@ class TelegramBot():
         #  start_polling() is non-blocking and will stop the bot gracefully.
         updater.idle()
 
+        # Close the connection to the database
+        self.sqlite_connection.close()
+
     def command_handler(self, update, context):
-        '''Used to handle commandas, send by the buttons in telegram'''
-        # get some basic informations about the message for logging and later
+        '''Used to handle commands, send by the buttons in telegram'''
+        # get some basic information's about the message for logging and later
         # use
         query = update.callback_query
         user_id = update.effective_chat.id
@@ -121,8 +123,8 @@ class TelegramBot():
             # if the length of the result is 0, than the user yould not be
             # found in the database and therefor isn't in it jet
             if len(result) == 0:
-                # Execute the insert-quary, replacing the palceholders with the
-                # users id and username
+                # Execute the insert-quarry, replacing the placeholders with
+                # the users id and username
                 execute_query(self.sqlite_connection,
                               db_const.INSERT_USER.format(id=user_id,
                                                           name=username))
@@ -136,9 +138,9 @@ class TelegramBot():
 
             result = execute_query(self.sqlite_connection, lookup_reg)
 
-            # Check if the susbcribtion is already registered
+            # Check if the subscription is already registered
             if len(result) == 0:
-                # it not, than insert the usersubscription into the database
+                # it not, than insert the user subscription into the database
                 insert_query = db_const.SUB_USER_REGION_INSERT
                 result = execute_query(
                     self.sqlite_connection, insert_query.format(
@@ -173,40 +175,55 @@ class TelegramBot():
         the available commands
         '''
 
-        context.bot.send_message(chat_id=update.effective_chat.id,
+        user_name = update.message.chat.username
+        message = update.message.text
+        user_id = update.effective_chat.id
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+
+        context.bot.send_message(chat_id=user_id,
                                  text=tele_const.START_MESSAGE,
                                  parse_mode=telegram.ParseMode.HTML)
-
-        userid = update.effective_chat.id
-        print(userid)
-        print(update.message.chat.username)
 
     def subscribe_to_region(self, update, context):
         '''
         Lets the user subscribe to a region
         '''
-        if len(context.args) != 1:
+        # Get some variables of the chat message and the user for later use and
+        # logging
+
+        user_name = update.message.chat.username
+        message = update.message.text
+        user_id = update.effective_chat.id
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+
+        # check if at least one argument got supplied
+        if len(context.args) == 0:
             reply = tele_const.INV_ARG_CNT.format(cmd=tele_const.CMD_SUB,
                                                   args=tele_const.CMD_SUB_ARG)
             context.bot.send_message(chat_id=update.effective_chat.id,
                                      text=reply)
             return
 
-        region_name = context.args[0]
+        # Strip any " used in the string to express places consisting of
+        # multiple words
+        region_name = " ".join(context.args).strip('"')
 
         query = db_const.SEARCH_REGIONS.format(region_name=region_name)
         result = execute_query(self.sqlite_connection, query)
 
-        # If the result-touple is empty, than there are not regions
+        # If the result-tuple is empty, than there are not regions
         # called the way the suer put it in
         if(len(result) == 0):
 
             respons = tele_const.NO_REGION_FOUND.format(
                 region_name=region_name)
 
-            context.bot.send_message(chat_id=update.effective_chat.id,
+            context.bot.send_message(chat_id=user_id,
                                      text=respons)
             return
+
         # If there are more results, we have to let the sure to let the
         # user know about that
         if(len(result) >= 1):
@@ -216,6 +233,7 @@ class TelegramBot():
                 command = "{0}_{1}_{2}".format(tele_const.CMD_SUB_PREFIX,
                                                str(item[1]),
                                                str(item[0]))
+
                 button = InlineKeyboardButton(text=str(item[0]),
                                               callback_data=command)
                 region_keyboard.append([button])
@@ -224,7 +242,7 @@ class TelegramBot():
                                                 one_time_keyboard=True)
 
             response = tele_const.MULTIPLE_REGIONS
-            context.bot.send_message(chat_id=update.effective_chat.id,
+            context.bot.send_message(chat_id=user_id,
                                      text=response,
                                      reply_markup=reply_markup)
 
@@ -235,7 +253,18 @@ class TelegramBot():
         Send a Message to the user, that the command is currently under
         construction
         '''
-        context.bot.send_message(chat_id=update.effective_chat.id,
+
+        # Safe some variables and log the message the user send
+        user_name = update.message.chat.username
+        message = update.message.text
+        user_id = update.effective_chat.id
+
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+
+        # Send the user a message, telling him that this command is currently
+        # not available
+        context.bot.send_message(chat_id=user_id,
                                  text=tele_const.CMD_NOT_AVAILABLE)
 
     def unsubscribe_from_regions(self, update, context):
@@ -307,7 +336,10 @@ def main():
                         handlers=[logging.FileHandler("corona_bot.log"),
                                   logging.StreamHandler()])
 
-    TelegramBot()
+    with open(const.CONFIG_FILE, "r") as file:
+        configurations = json.loads(file.read())
+
+    TelegramBot(configurations["telegram-token"])
 
 
 if __name__ == "__main__":
