@@ -9,6 +9,9 @@ A telegram-bot to inform about updates of the corona-ampel
 import json
 import logging
 import sqlite3
+import time
+import threading
+
 
 import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -49,48 +52,60 @@ def execute_query(connection, query):
     return result
 
 
-class TelegramBot():
+class TelegramBot(threading.Thread):
     '''Class for the telegram-bot'''
 
     def __init__(self, token):
         '''Initiate the bot, register all the handlers and start polling'''
+
+        # Initialize all base classes
+        super().__init__()
+
+        self.running = False
         logging.info(logg_const.STARTING_BOT)
-
-
-        updater = Updater(token=token, use_context=True)
-        dispatcher = updater.dispatcher
+        self.updater = Updater(token=token, use_context=True)
+        self.dispatcher = self.updater.dispatcher
 
         logging.info(logg_const.REGISTER_HANDLER)
 
         # Telegram-Command handler
-        dispatcher.add_handler(CommandHandler('start', self.start))
-        dispatcher.add_handler(CommandHandler('subscribe',
+        self.dispatcher.add_handler(CommandHandler('start', self.start_msg))
+        self.dispatcher.add_handler(CommandHandler('subscribe',
                                               self.subscribe_to_region))
-        dispatcher.add_handler(CommandHandler('unsubscribe',
-                                              self.unsubscribe_from_regions))
-        dispatcher.add_handler(CommandHandler('showsubscriptions',
-                                              self.list_all_regions))
+        self.dispatcher.add_handler(CommandHandler('unsubscribe',
+                                                self.unsubscribe_from_regions))
+        self.dispatcher.add_handler(CommandHandler('showsubscriptions',
+                                                   self.list_all_regions))
 
         # Adding a Callback-handler for handling subscriptions and other
         # inline-keyboard elements
-        dispatcher.add_handler(CallbackQueryHandler(self.command_handler))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.command_handler))
         logging.info(logg_const.REGISTERED_HANDLER)
 
         # connect to the database
         self.sqlite_connection = sqlite3.connect("corona_db.sqlite",
                                                  check_same_thread=False)
 
+    def run(self):
+        # TODO: Probably not optimal, because ctrl+c still gets passed th toe
+        # dispatcher and updater
         # start pooling
         logging.info(logg_const.STARTED_BOT)
-        updater.start_polling()
+        self.updater.start_polling()
+        self.running = True
 
-        #  Block until the you presses Ctrl-C or the process receives SIGINT,
-        #  SIGTERM or SIGABRT. This should be used most of the time, since
-        #  start_polling() is non-blocking and will stop the bot gracefully.
-        updater.idle()
+        #  Block until you presses Ctrl-C.
+        while self.running:
+                time.sleep(1)
 
+        logging.info("Stopping updater and dispatcher ...")
+        self.updater.stop()
+        self.dispatcher.stop()
+
+        logging.info("Stopped bot, closing database connection ...")
         # Close the connection to the database
         self.sqlite_connection.close()
+        logging.info("Database connection closed!")
 
     def command_handler(self, update, context):
         '''Used to handle commands, send by the buttons in telegram'''
@@ -169,7 +184,7 @@ class TelegramBot():
             logging.info(logg_const.USER_UNSUB.format(user_name=username,
                                                       region_name=command[2]))
 
-    def start(self, update, context):
+    def start_msg(self, update, context):
         '''
         Starts the messaging with the user and tells him about the bot and
         the available commands
@@ -339,7 +354,23 @@ def main():
     with open(const.CONFIG_FILE, "r") as file:
         configurations = json.loads(file.read())
 
-    TelegramBot(configurations["telegram-token"])
+    # initialize the bot
+    telegram_bot = TelegramBot(configurations["telegram-token"])
+    telegram_bot.daemon = True
+
+    # start the bot-thread
+    telegram_bot.start()
+
+    # loop to keep the bot running
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        # stop the bot
+        telegram_bot.running = False
+
+        # join it with the main thread
+        telegram_bot.join()
 
 
 if __name__ == "__main__":
