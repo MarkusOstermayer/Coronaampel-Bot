@@ -1,5 +1,5 @@
-# !/usr/bin/python3
-#  -*- coding: utf-8 -*-
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 
 """
 A constantsfile for the project
@@ -13,9 +13,19 @@ CORONAKOMMISSIONV2 = ("https://corona-ampel.gv.at"
 
 CONFIG_FILE = "config.json"
 
+DATABASE_FILE = "corona_db.sqlite"
+
+DATA_BUILDER_LOG = "corona_data_builder.log"
 
 class Logging():
     '''Used tor logging some events'''
+
+    CREATING_DATABASE = "Creating database ..."
+    DATABASE_CREATED = "Database created!"
+
+    CREATING_TABLES = "Creating tables ..."
+    TABLES_CREATED = "Tables created!"
+
     INSERT_SUCCESS = "Inserted {region_name} into the region-table"
 
     REGISTERED_USER = "Registered new user {name}(ID: {id})"
@@ -29,6 +39,8 @@ class Logging():
 
     REGISTER_HANDLER = "registrating handler ..."
     REGISTERED_HANDLER = "handler registered!"
+
+    USER_SEND_MSG = "User {username} send the following message: {msg}"
 
 
 class Database():
@@ -59,8 +71,8 @@ class Database():
                       "VALUES ({revision}, {kw}, {region_id}, {alert_level}, "
                       "'{reason}');")
     ADD_UPDATE = ("INSERT INTO updates "
-                  "(region_id) VALUES "
-                  "({region_id});")
+                  "(region_id, telegram) VALUES "
+                  "({region_id}, 0);")
 
     REGIONS_QUERY = ("select regions.id, regions.name "
                      "from users, regions, subscriptions "
@@ -118,7 +130,8 @@ class Database():
 
     CREATE_UPDATES_TABLE = ("CREATE TABLE IF NOT EXISTS updates ("
                             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                            "region_id INTEGER);")
+                            "region_id INTEGER, "
+                            "telegram INTEGER);")
 
 
 class TelegramConstants():

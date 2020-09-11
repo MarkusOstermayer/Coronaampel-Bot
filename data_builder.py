@@ -10,22 +10,22 @@ import json
 import sqlite3
 import requests
 
-
 import constants as const
 from constants import Database as db_const
 from constants import Logging as logg_const
+from utils import execute_query
 
 
 def create_database():
     """Creates the database connection and build the tables if necessary"""
 
     #  creation and connection to the database
-    logging.info("Creating database ...")
-    sqlite_connection = sqlite3.connect("corona_db.sqlite")
-    logging.info("Database created!")
+    logging.info(logg_const.CREATING_DATABASE)
+    sqlite_connection = sqlite3.connect(const.DATABASE_FILE)
+    logging.info(logg_const.DATABASE_CREATED)
 
     #  building the tables if necessary
-    logging.info("Creating tables ...")
+    logging.info(logg_const.CREATING_TABLES)
 
     execute_query(sqlite_connection, db_const.CREATE_REGIONS_TABLE)
     execute_query(sqlite_connection, db_const.CREATE_WARNINGS_TABLE)
@@ -33,38 +33,10 @@ def create_database():
     execute_query(sqlite_connection, db_const.CREATE_SUBSCRIPTIONS_TABLE)
     execute_query(sqlite_connection, db_const.CREATE_UPDATES_TABLE)
 
-    logging.info("Tables created!")
+    logging.info(logg_const.TABLES_CREATED)
 
     # return the connection for later use
     return sqlite_connection
-
-
-def execute_query(connection, query):
-    '''Execute Quarry's on the database'''
-
-    # get a cursor on the database to work with it
-    cursor = connection.cursor()
-    result = None
-    try:
-        # execute the provided quarry on the database, commiting and logging
-        cursor.execute(query)
-        result = cursor.fetchall()
-        logging.info(db_const.QUERY_EXECUTED.format(quary=query))
-
-    # throws an exception if something wrong was done, ether by violation
-    # of a database contraint or by an invalid quarry
-    except sqlite3.DatabaseError as exception:
-        logging.error(db_const.EXCEPTION_MSG.format(exc_name=db_const.DB_ERROR,
-                                                    quary=query))
-        logging.exception(exception)
-
-    except sqlite3.OperationalError as exception:
-        logging.error(db_const.EXCEPTION_MSG.format(exc_name=db_const.OP_ERROR,
-                                                    quary=query))
-        logging.exception(exception)
-
-    connection.commit()
-    return result
 
 
 def get_corona_data():
@@ -86,7 +58,6 @@ def insert_regions(sql_connection, json_response):
     # iterate over all items in the regions-set, this contains Bundesländer,
     # Gemeinden, Bezirke
     for region in json_response["Regionen"]:
-
         region_check = db_const.REGION_CHECK.format(id=int(region['GKZ']),
                                                     type=region['Region'],
                                                     name=region['Name'])
@@ -96,7 +67,7 @@ def insert_regions(sql_connection, json_response):
         result = execute_query(sql_connection, region_check)
 
         # if not, it will be inserted
-        if result is None:
+        if len(result) == 0:
             region_gkz = int(region['GKZ'])
             region_type = region['Region']
             region_name = region['Name']
@@ -116,7 +87,6 @@ def insert_warnings(sql_connection, json_response):
 
     for week in json_response['Kalenderwochen']:
         for region in week["Warnstufen"]:
-            print(region)
             # Prepared statement to check if the region is already in the table
             # and order by desc revision to get the latest evrsion
 
@@ -144,20 +114,20 @@ def insert_warnings(sql_connection, json_response):
                 # Insert the first revision of the region to the database,
                 # this is the starting-level
                 warning_data = db_const.INSERT_WARNING.format(
-                    revision=1, kw=kw, region_id=region_id, alert_level=level, reason=reason)
+                    revision=1, kw=kw, region_id=region_id, alert_level=level,
+                    reason=reason)
                 execute_query(sql_connection, warning_data)
             else:
                 # It is already in the database, lets check if the warning
                 # has changed from last time inserting it
                 # result: (revision, kw, regions_id, alert_level, reason)
-
-                if result[3] != int(region['Warnstufe']):
+                if result[0][3] != int(region['Warnstufe']):
                     # define some variables we need to build the query
                     reason = "Null"
                     level = int(region['Warnstufe'])
                     region_id = int(region['GKZ'])
                     kw = week['KW']
-                    rev = result[0] + 1
+                    rev = result[0][0] + 1
 
                     # check if a reason for the alert_level was given, if so,
                     # than set it
@@ -167,12 +137,14 @@ def insert_warnings(sql_connection, json_response):
                     # There is a new alert-level for the region, therefor we
                     # insert it with a new revision
                     warn_update = db_const.INSERT_WARNING.format(
-                        revision=rev, kw=kw, region_id=region_id, alert_level=level, reason=reason)
+                        revision=rev, kw=kw, region_id=region_id,
+                        alert_level=level, reason=reason)
                     execute_query(sql_connection, warn_update)
 
                     # Add the region to the update-list for use by other
                     # programs
                     region_id = int(region['GKZ'])
+
                     add_update = db_const.ADD_UPDATE.format(
                         region_id=region_id)
                     execute_query(sql_connection, add_update)
@@ -188,31 +160,6 @@ def main():
 
     insert_regions(database_con, json_response)
     insert_warnings(database_con, json_response)
-    '''
-    str = """{
-        "Kalenderwochen": [{
-        "KW": 36,
-        "Warnstufen": [{
-            "GKZ": "0",
-            "Warnstufe": "10",
-            "Begruendung": ""
-        }]
-    }]}
-    """
-    insert_warnings(database_con, json.loads(str))
-    str = """{
-        "Kalenderwochen": [{
-        "KW": 36,
-        "Warnstufen": [{
-            "GKZ": "0",
-            "Warnstufe": "10",
-            "Begruendung": ""
-        }]
-    }]}
-    """
-    insert_warnings(database_con, json.loads(str))
-    insert_warnings(database_con, json.loads(str))
-    '''
 
     # close the database connection
     database_con.close()
@@ -222,7 +169,7 @@ if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s:%(levelname)s - %(message)s',
                         level=logging.INFO,
                         handlers=[
-                            logging.FileHandler("corona_bot.log"),
+                            logging.FileHandler(const.DATA_BUILDER_LOG),
                             logging.StreamHandler()
                         ])
     main()
