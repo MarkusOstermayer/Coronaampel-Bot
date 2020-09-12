@@ -17,6 +17,20 @@ DATABASE_FILE = "corona_db.sqlite"
 
 DATA_BUILDER_LOG = "corona_data_builder.log"
 
+ALERT_URL = {
+            1: "https://corona-ampel.gv.at/ampelfarben/geringes-risiko-gruen/",
+            2: "https://corona-ampel.gv.at/ampelfarben/mittleres-risiko-gelb/",
+            3: "https://corona-ampel.gv.at/ampelfarben/hohes-risiko-orange/",
+            4: "https://corona-ampel.gv.at/ampelfarben/sehr-hohes-risiko-rot/"
+}
+
+ALERT_COLORS = {
+                1: "🟢",
+                2: "🟡",
+                3: "🟠",
+                4: "🔴"}
+
+
 class Logging():
     '''Used tor logging some events'''
 
@@ -41,6 +55,8 @@ class Logging():
     REGISTERED_HANDLER = "handler registered!"
 
     USER_SEND_MSG = "User {username} send the following message: {msg}"
+
+    USER_UPDATE = "Inform {username} about the update in region {region_name}"
 
 
 class Database():
@@ -132,6 +148,29 @@ class Database():
                             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                             "region_id INTEGER, "
                             "telegram INTEGER);")
+    GET_UPDATED_REGIONS = "select region_id from updates where telegram = 0;"
+
+    GET_REGIONUPDATES = ("select regions.name, warnings.alert_level from "
+                         "warnings , regions "
+                         "where (warnings.regions_id = {id} and "
+                         "warnings.regions_id = regions.id) "
+                         "order by warnings.revision DESC "
+                         "Limit 2;")
+    '''
+    LOOKUP_REGION_SUBSCRIPTIONS = ("select subscriptions.users_id from "
+                                   " subscriptions where "
+                                   "subscriptions.regions_id = {region_id}")
+    '''
+
+    LOOKUP_REGION_SUBSCRIPTIONS = ("select subscriptions.users_id, "
+                                   "users.name  from subscriptions, users "
+                                   "where "
+                                   "subscriptions.regions_id = {region_id} "
+                                   "and subscriptions.users_id = users.id;")
+
+    MARK_UPDATE_AS_READ = ("UPDATE updates "
+                           "set telegram = 1 "
+                           "where region_id = {region_id};")
 
 
 class TelegramConstants():
@@ -179,4 +218,18 @@ class TelegramConstants():
 
     USER_SUBSCRIPTIONS = "You subscribe for the following regions: \n"
 
+    LIST_REGION = "🔘 {region_name}\n"
+
     USER_UNSUBSCRIPTION = "You just unsubscribed from {region_name}"
+
+    REGION_LOWER_ALERT = ("🟢 Good News! \n\n"
+                          "{city_name} just went from alertlevel "
+                          "{level1} to {level2} "
+                          " This means, the following restrictions apply for "
+                          "this area:\n{url_link}")
+
+    REGION_HIGHER_ALERT = ("🔴 Bad News! \n\n"
+                           "{city_name} just went from alertlevel "
+                           "{level1} to {level2} "
+                           " This means, the following restrictions apply for "
+                           "this area:\n{url_link}")

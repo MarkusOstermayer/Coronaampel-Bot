@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-A telegram-bot to inform about updates of the corona-ampel
+A telegram-bot to inform about updates of the austrian corona-ampel
 """
 
 
@@ -12,7 +12,7 @@ import sqlite3
 import time
 import threading
 
-
+from apscheduler.schedulers.background import BackgroundScheduler
 import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater
@@ -63,6 +63,13 @@ class TelegramBot(threading.Thread):
 
         self.running = False
         logging.info(logg_const.STARTING_BOT)
+
+        # TODO: check if the bot and the dispatcher/updater can be created
+        # more easily
+        # Get a bot for later use in the update-function
+        self.bot = telegram.Bot(token=token)
+
+        # get updater and dispatcher running
         self.updater = Updater(token=token, use_context=True)
         self.dispatcher = self.updater.dispatcher
 
@@ -71,9 +78,11 @@ class TelegramBot(threading.Thread):
         # Telegram-Command handler
         self.dispatcher.add_handler(CommandHandler('start', self.start_msg))
         self.dispatcher.add_handler(CommandHandler('subscribe',
-                                              self.subscribe_to_region))
-        self.dispatcher.add_handler(CommandHandler('unsubscribe',
-                                                self.unsubscribe_from_regions))
+                                                   self.subscribe_to_region))
+        self.dispatcher.add_handler(
+            CommandHandler(
+                'unsubscribe',
+                self.unsubscribe_from_regions))
         self.dispatcher.add_handler(CommandHandler('showsubscriptions',
                                                    self.list_all_regions))
 
@@ -81,6 +90,12 @@ class TelegramBot(threading.Thread):
         # inline-keyboard elements
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_handler))
         logging.info(logg_const.REGISTERED_HANDLER)
+
+        # start a background scheduler for pulling updates from the database
+        self.scheduler = BackgroundScheduler()
+
+        self.scheduler.add_job(self.pull_updates, 'interval', hours=1)
+        self.scheduler.start()
 
         # connect to the database
         self.sqlite_connection = sqlite3.connect("corona_db.sqlite",
@@ -96,16 +111,83 @@ class TelegramBot(threading.Thread):
 
         #  Block until you presses Ctrl-C.
         while self.running:
-                time.sleep(1)
+            time.sleep(1)
 
         logging.info("Stopping updater and dispatcher ...")
         self.updater.stop()
         self.dispatcher.stop()
+        self.scheduler.shutdown(wait=False)
 
         logging.info("Stopped bot, closing database connection ...")
         # Close the connection to the database
         self.sqlite_connection.close()
         logging.info("Database connection closed!")
+
+    def pull_updates(self):
+        '''Pull updates from the database regarding new alert-levels'''
+
+        # get all regions, that are not already red
+        result = execute_query(self.sqlite_connection,
+                               db_const.GET_UPDATED_REGIONS)
+
+        for region in result:
+            region_id = region[0]
+
+            lookup_quarry = db_const.LOOKUP_REGION_SUBSCRIPTIONS.format(
+                region_id=region_id)
+
+            lookup_result = execute_query(self.sqlite_connection,
+                                          lookup_quarry)
+            print(lookup_result)
+            # If the lookup does not yield any subscribed user, skip the
+            # further lookup, since there is no user to inform
+            if len(lookup_result) == 0:
+                # This should be here, so that even unregistered regions get
+                # marked as read
+                mark_update_as_read = db_const.MARK_UPDATE_AS_READ.format(
+                    region_id=region_id)
+
+                execute_query(self.sqlite_connection, mark_update_as_read)
+                continue
+
+            update = db_const.GET_REGIONUPDATES.format(id=region_id)
+
+            state_result = execute_query(self.sqlite_connection, update)
+
+            response = None
+            region_name = state_result[0][0]
+            bevor_color = const.ALERT_COLORS[state_result[1][1]]
+            after_color = const.ALERT_COLORS[state_result[0][1]]
+            url = const.ALERT_URL[state_result[0][1]]
+
+            # the newer level is higher than the older one, the level has risen
+            if state_result[0][1] > state_result[1][1]:
+                response = tele_const.REGION_HIGHER_ALERT.format(
+                    city_name=region_name,
+                    level1=bevor_color,
+                    level2=after_color,
+                    url_link=url)
+            else:
+                response = tele_const.REGION_LOWER_ALERT.format(
+                    city_name=region_name,
+                    level1=bevor_color,
+                    level2=after_color,
+                    url_link=url)
+
+            for user in lookup_result:
+                logging.info(
+                    logg_const.USER_UPDATE.format(
+                        username=user[1],
+                        region_name=region_name))
+
+                self.bot.send_message(chat_id=user[0],
+                                      text=response)
+
+            # mark region as read
+            mark_update_as_read = db_const.MARK_UPDATE_AS_READ.format(
+                region_id=region_id)
+
+            execute_query(self.sqlite_connection, mark_update_as_read)
 
     def command_handler(self, update, context):
         '''Used to handle commands, send by the buttons in telegram'''
@@ -325,15 +407,22 @@ class TelegramBot(threading.Thread):
 
     def list_all_regions(self, update, context):
         '''Lists all the regions the user has subscribed to'''
+
+        user_name = update.message.chat.username
+        message = update.message.text
         user_id = update.effective_chat.id
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+
         regions_query = db_const.REGIONS_QUERY.format(user_id=user_id)
         result = execute_query(self.sqlite_connection, regions_query)
+
         if(len(result) > 0):
             # mehr als eine Region
             response = tele_const.USER_SUBSCRIPTIONS
 
             for item in result:
-                response += f"* {item[1]}\n"
+                response += tele_const.LIST_REGION.format(region_name=item[1])
 
             context.bot.send_message(chat_id=user_id,
                                      text=response)
