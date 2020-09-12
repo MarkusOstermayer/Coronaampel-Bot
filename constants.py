@@ -5,7 +5,6 @@
 A constantsfile for the project
 """
 
-__copyright__ = "Copyright 2020"
 
 CORONAKOMMISSIONV2 = ("https://corona-ampel.gv.at"
                       "/sites/corona-ampel.gv.at/files/coronadata/"
@@ -93,7 +92,8 @@ class Database():
     REGIONS_QUERY = ("select regions.id, regions.name "
                      "from users, regions, subscriptions "
                      "where (subscriptions.regions_id = regions.id "
-                     "and subscriptions.users_id = {user_id});")
+                     "and subscriptions.users_id = {user_id} "
+                     "and subscriptions.users_id = users.id);")
 
     SEARCH_REGIONS = ("select name, id from regions where name like "
                       "'%{region_name}%' "
@@ -222,14 +222,11 @@ class TelegramConstants():
 
     USER_UNSUBSCRIPTION = "You just unsubscribed from {region_name}"
 
-    REGION_LOWER_ALERT = ("🟢 Good News! \n\n"
-                          "{city_name} just went from alertlevel "
-                          "{level1} to {level2} "
-                          " This means, the following restrictions apply for "
-                          "this area:\n{url_link}")
+    REGION_LOWER_ALERT = ("🟢 Good News! \n\n")
 
-    REGION_HIGHER_ALERT = ("🔴 Bad News! \n\n"
-                           "{city_name} just went from alertlevel "
-                           "{level1} to {level2} "
-                           " This means, the following restrictions apply for "
-                           "this area:\n{url_link}")
+    REGION_HIGHER_ALERT = ("🔴 Bad News! \n\n")
+
+    REGION_ALERT_BODY = ("{city_name} just went from alertlevel "
+                         "{level1} to {level2}\n"
+                         "This means, the following restrictions apply for "
+                         "this area:\n{url_link}")

@@ -22,34 +22,7 @@ import constants as const
 from constants import TelegramConstants as tele_const
 from constants import Database as db_const
 from constants import Logging as logg_const
-
-
-def execute_query(connection, query):
-    '''Execute Quarry's on the database'''
-
-    # get a cursor on the database to work with it
-    cursor = connection.cursor()
-    result = None
-    try:
-        # execute the provided quarry on the database, committing and logging
-        cursor.execute(query)
-        result = cursor.fetchall()
-        logging.info(db_const.QUERY_EXECUTED.format(quary=query))
-
-    # throws an exception if something wrong was done, ether by violation
-    # of a database constraint or by an invalid quarry
-    except sqlite3.DatabaseError as exception:
-        logging.error(db_const.EXCEPTION_MSG.format(exc_name=db_const.DB_ERROR,
-                                                    quary=query))
-        logging.exception(exception)
-
-    except sqlite3.OperationalError as exception:
-        logging.error(db_const.EXCEPTION_MSG.format(exc_name=db_const.OP_ERROR,
-                                                    quary=query))
-        logging.exception(exception)
-
-    connection.commit()
-    return result
+from utils import execute_query
 
 
 class TelegramBot(threading.Thread):
@@ -94,7 +67,8 @@ class TelegramBot(threading.Thread):
         # start a background scheduler for pulling updates from the database
         self.scheduler = BackgroundScheduler()
 
-        self.scheduler.add_job(self.pull_updates, 'interval', hours=1)
+        # self.scheduler.add_job(self.pull_updates, 'interval', hours=10)
+        self.scheduler.add_job(self.pull_updates, 'interval', seconds=10)
         self.scheduler.start()
 
         # connect to the database
@@ -160,19 +134,18 @@ class TelegramBot(threading.Thread):
             after_color = const.ALERT_COLORS[state_result[0][1]]
             url = const.ALERT_URL[state_result[0][1]]
 
+            response = ""
             # the newer level is higher than the older one, the level has risen
             if state_result[0][1] > state_result[1][1]:
-                response = tele_const.REGION_HIGHER_ALERT.format(
-                    city_name=region_name,
-                    level1=bevor_color,
-                    level2=after_color,
-                    url_link=url)
+                response = tele_const.REGION_HIGHER_ALERT
             else:
-                response = tele_const.REGION_LOWER_ALERT.format(
-                    city_name=region_name,
-                    level1=bevor_color,
-                    level2=after_color,
-                    url_link=url)
+                response = tele_const.REGION_LOWER_ALERT
+
+            response += tele_const.REGION_ALERT_BODY.format(
+                city_name=region_name,
+                level1=bevor_color,
+                level2=after_color,
+                url_link=url)
 
             for user in lookup_result:
                 logging.info(
@@ -187,7 +160,7 @@ class TelegramBot(threading.Thread):
             mark_update_as_read = db_const.MARK_UPDATE_AS_READ.format(
                 region_id=region_id)
 
-            execute_query(self.sqlite_connection, mark_update_as_read)
+            #execute_query(self.sqlite_connection, mark_update_as_read)
 
     def command_handler(self, update, context):
         '''Used to handle commands, send by the buttons in telegram'''
