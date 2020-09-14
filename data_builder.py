@@ -5,9 +5,10 @@
 A Programm to ingest covid19 region-data into a sqlite-database for later use
 """
 
-import logging
 import json
+import logging
 import sqlite3
+
 import requests
 
 import constants as const
