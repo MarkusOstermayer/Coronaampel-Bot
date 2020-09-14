@@ -9,19 +9,20 @@ A telegram-bot to inform about updates of the austrian corona-ampel
 import json
 import logging
 import sqlite3
-import time
 import threading
+import time
+
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackQueryHandler, CommandHandler
 from telegram.ext import Updater
-from telegram.ext import CommandHandler, CallbackQueryHandler
 
 import constants as const
-from constants import TelegramConstants as tele_const
 from constants import Database as db_const
 from constants import Logging as logg_const
+from constants import TelegramConstants as tele_const
 from utils import execute_query
 
 
@@ -67,8 +68,8 @@ class TelegramBot(threading.Thread):
         # start a background scheduler for pulling updates from the database
         self.scheduler = BackgroundScheduler()
 
-        # self.scheduler.add_job(self.pull_updates, 'interval', hours=10)
-        self.scheduler.add_job(self.pull_updates, 'interval', seconds=10)
+        # Run the job every day at 8 am
+        self.scheduler.add_job(self.pull_updates, 'cron', hour="8", minute="0")
         self.scheduler.start()
 
         # connect to the database
@@ -160,7 +161,7 @@ class TelegramBot(threading.Thread):
             mark_update_as_read = db_const.MARK_UPDATE_AS_READ.format(
                 region_id=region_id)
 
-            #execute_query(self.sqlite_connection, mark_update_as_read)
+            execute_query(self.sqlite_connection, mark_update_as_read)
 
     def command_handler(self, update, context):
         '''Used to handle commands, send by the buttons in telegram'''
@@ -340,17 +341,27 @@ class TelegramBot(threading.Thread):
     def unsubscribe_from_regions(self, update, context):
         '''Lets the user unsubscribe from regions'''
 
+        user_name = update.message.chat.username
+        message = update.message.text
+        user_id = update.effective_chat.id
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+
         # Check if the user supplied more than one argument
         if len(context.args) > 1:
             reply = tele_const.INV_ARG_CNT.format(tele_const.CMD_UNSUB,
                                                   tele_const.CMD_UNSUB_ARG)
-            context.bot.send_message(chat_id=update.effective_chat.id,
+            context.bot.send_message(chat_id=user_id,
                                      text=reply)
             return
         if len(context.args) == 1:
             if(context.args[0] == "all"):
-                # TODO:insubscribe from all regions ...
-                pass
+                unsub_all_quarry = db_const.UBSUB_USER_ALL_REGION.format(
+                    user_id=user_id)
+                execute_query(self.sqlite_connection, unsub_all_quarry)
+
+                context.bot.send_message(chat_id=user_id,
+                                         text=tele_const.USER_UNSUBSCRIBE_ALL)
             return
 
         user_id = update.effective_chat.id
@@ -370,12 +381,12 @@ class TelegramBot(threading.Thread):
 
             reply_markup = InlineKeyboardMarkup(region_keyboard,
                                                 one_time_keyboard=True)
-            response = tele_const.REGISTERED_REGIONS.format
-            context.bot.send_message(chat_id=update.effective_chat.id,
+            response = tele_const.REGISTERED_REGIONS
+            context.bot.send_message(chat_id=user_id,
                                      text=response,
                                      reply_markup=reply_markup)
         if(len(result) == 0):
-            context.bot.send_message(chat_id=update.effective_chat.id,
+            context.bot.send_message(chat_id=user_id,
                                      text=tele_const.NO_SUBSCRIPTIONS_FOUND)
 
     def list_all_regions(self, update, context):
@@ -395,7 +406,13 @@ class TelegramBot(threading.Thread):
             response = tele_const.USER_SUBSCRIPTIONS
 
             for item in result:
-                response += tele_const.LIST_REGION.format(region_name=item[1])
+                warn_quarry = db_const.CHECK_WARNING.format(region_id=item[0])
+                warn_result = execute_query(
+                    self.sqlite_connection, warn_quarry)
+
+                response += tele_const.LIST_REGION.format(
+                    alert_level=const.ALERT_COLORS[warn_result[0][3]],
+                    region_name=item[1])
 
             context.bot.send_message(chat_id=user_id,
                                      text=response)
