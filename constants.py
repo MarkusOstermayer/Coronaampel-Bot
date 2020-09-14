@@ -116,6 +116,9 @@ class Database():
                          "WHERE (subscriptions.regions_id = {region_id} "
                          "and subscriptions.users_id = {user_id});")
 
+    UBSUB_USER_ALL_REGION = ("DELETE FROM subscriptions "
+                             "WHERE (subscriptions.users_id = {user_id});")
+
     CREATE_REGIONS_TABLE = ("CREATE TABLE IF NOT EXISTS regions ("
                             "id INTEGER PRIMARY KEY, "
                             "type TEXT, "
@@ -184,7 +187,7 @@ class TelegramConstants():
     CMD_UNSUB_PREFIX = "unsubscribe"
     CMD_SUB_PREFIX = "subscribe"
 
-    START_MESSAGE = ("Hi 👋, this are the commands I know.\n"
+    START_MESSAGE = ("Hi 👋, these are the commends I know.\n"
                      "\n"
                      "<b>Subscribing and Unsubscribing</b>\n"
                      "/subscribe [Cityname] - "
@@ -216,11 +219,13 @@ class TelegramConstants():
     NO_SUBSCRIPTIONS_FOUND = ("It looks like, that you do not have any "
                               "subscriptions jet😄")
 
-    USER_SUBSCRIPTIONS = "You subscribe for the following regions: \n"
+    USER_SUBSCRIPTIONS = "You are subscribed to the following regions: \n"
 
-    LIST_REGION = "🔘 {region_name}\n"
+    LIST_REGION = "{alert_level} {region_name}\n"
 
     USER_UNSUBSCRIPTION = "You just unsubscribed from {region_name}"
+
+    USER_UNSUBSCRIBE_ALL = "You just unsubscribed from all regions"
 
     REGION_LOWER_ALERT = ("🟢 Good News! \n\n")
 
