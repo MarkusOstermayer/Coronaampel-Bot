@@ -81,7 +81,7 @@ class TelegramBot(threading.Thread):
         # this job clears the cached information from the covid dashbaord
         # this will be cleared every hour.
         self.scheduler.add_job(get_data_js.cache_clear, 'cron',
-                               minute="0", seconds="0")
+                               minute="0", second="0")
         self.scheduler.start()
 
         # connect to the database
