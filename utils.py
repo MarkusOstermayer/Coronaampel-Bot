@@ -59,7 +59,7 @@ def simple_js_parser(pagecontent):
     return variables
 
 
-@lru_cache
+@lru_cache(maxsize=32)
 def get_data_js(url):
     """
     Used to get the interpreted json data from the dashbaord
