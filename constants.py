@@ -10,6 +10,30 @@ CORONAKOMMISSIONV2 = ("https://corona-ampel.gv.at"
                       "/sites/corona-ampel.gv.at/files/coronadata/"
                       "CoronaKommissionV2.json")
 
+DASHBOARD_URL_PREFIX = "https://info.gesundheitsministerium.at/data/"
+TOTAL_TESTS_URL = "GesamtzahlTestungen.js"
+TOTAL_POSITIV_URL = "PositivGetestet.js"
+CURRENT_POSITIV_URL = "AktuelleErkrankungen.js"
+ACTIVE_CASES_URL = "BestFaelleNH.js"
+GENDER_RATIO_URL = "Geschlechtsverteilung.js"
+USED_INTENSIVE_CARE_BEDS_URL = "GesamtzahlIntensivBettenBel.js"
+TOTAL_INTENSIVE_CARE_BEDS_URL = "GesamtzahlIntensivbettenVerf.js"
+USED_NORMAL_BEDS_URL = "GesamtzahlNormalbettenBel.js"
+TOTAL_NORMAL_BEDS_URL = "GesamtzahlNormalbettenVerf.js"
+
+EPIDEMIC_OVERVIEW_URLS = [
+    TOTAL_TESTS_URL,
+    TOTAL_TESTS_URL,
+    TOTAL_POSITIV_URL,
+    CURRENT_POSITIV_URL,
+    ACTIVE_CASES_URL,
+    GENDER_RATIO_URL,
+    USED_INTENSIVE_CARE_BEDS_URL,
+    TOTAL_INTENSIVE_CARE_BEDS_URL,
+    USED_NORMAL_BEDS_URL,
+    TOTAL_NORMAL_BEDS_URL,
+]
+
 CONFIG_FILE = "config.json"
 
 DATABASE_FILE = "corona_db.sqlite"
@@ -17,17 +41,17 @@ DATABASE_FILE = "corona_db.sqlite"
 DATA_BUILDER_LOG = "corona_data_builder.log"
 
 ALERT_URL = {
-            1: "https://corona-ampel.gv.at/ampelfarben/geringes-risiko-gruen/",
-            2: "https://corona-ampel.gv.at/ampelfarben/mittleres-risiko-gelb/",
-            3: "https://corona-ampel.gv.at/ampelfarben/hohes-risiko-orange/",
-            4: "https://corona-ampel.gv.at/ampelfarben/sehr-hohes-risiko-rot/"
+    1: "https://corona-ampel.gv.at/ampelfarben/geringes-risiko-gruen/",
+    2: "https://corona-ampel.gv.at/ampelfarben/mittleres-risiko-gelb/",
+    3: "https://corona-ampel.gv.at/ampelfarben/hohes-risiko-orange/",
+    4: "https://corona-ampel.gv.at/ampelfarben/sehr-hohes-risiko-rot/"
 }
 
 ALERT_COLORS = {
-                1: "🟢",
-                2: "🟡",
-                3: "🟠",
-                4: "🔴"}
+    1: "🟢",
+    2: "🟡",
+    3: "🟠",
+    4: "🔴"}
 
 
 class Logging():
@@ -194,7 +218,19 @@ class TelegramConstants():
                      "Used to register for an alert for a city\n"
                      "/unsubscribe or /unsubscribe all - "
                      "Unsubscribe from one city or from all citys\n"
-                     "/showsubscriptions - Show all active subscriptions")
+                     "/showsubscriptions - Show all active subscriptions"
+                     "\n\n"
+                     "<b>Epidemic data</b>\n"
+                     "/sources - get a list of sources that I use\n"
+                     "/caseinfo - get infos about the current situation")
+
+    SOURCES_URLS = (
+        "I get my informations from the following Sources: \n"
+        "<a href=\"https://corona-ampel.gv.at/\">Corona-Ampel</a> - "
+        "Information about the current state of a region \n\n"
+        "<a href=\"https://info.gesundheitsministerium.at/\">Amtliches "
+        "Dashboard COVID19</a> - "
+        "Information about epidemic informations")
 
     CMD_NOT_AVAILABLE = ("⚠️ Not available ⚠️\n"
                          "Oh no, it looks like the command is currently under"
@@ -207,10 +243,33 @@ class TelegramConstants():
 
     MULTIPLE_REGIONS = ("Hmmm, I found the following regions🤔\n"
                         "Just let me know what region you mean 😄\n")
+
     NO_REGION_FOUND = ("Hmmm, I found no region called {region_name}🤔\n"
                        "Make sure you typed it correct 😄")
+
     ALREADY_REGISTERED = ("Hmmm, it looks like you have already registered for"
                           " this region🤔\n")
+
+    EPIDEMIC_OVERVIEW = (
+        "<b>Epidemic overview</b>\n\n"
+        "So far {tests_total} tests were performed, "
+        "{pos_tests_total} of these test were confirmed as "
+        "corona cases.\n\n"
+        "Currently, of these {pos_tests_total} cases, "
+        "{pos_tests_curr} cases are still considered "
+        "to be infected, these are {tests_perc:.2f}%.\n\n"
+        "Of these {pos_tests_curr} active cases, {hospital} "
+        "persons are in medical facilities.\n\n"
+        "Of the {avail_int_care} currently available "
+        "intensive care beds, "
+        "{int_care_curr_use} are in use, these are {int_care_percent:.2f}% "
+        "of all available intensive care beds.\n\n"
+        "Of the {avail_care} currently available "
+        "hospital beds, "
+        "{care_curr_use} beds are currently in use, "
+        "these are {care_percent:.2f}% of all available care beds.\n\n"
+        "The gender distribution is {female}% female & {male}% male\n\n"
+        "Last update: {update_time}")
 
     REGISTERED = "Okey, I have just registered you for {region_name} 😄"
 

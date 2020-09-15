@@ -23,7 +23,7 @@ import constants as const
 from constants import Database as db_const
 from constants import Logging as logg_const
 from constants import TelegramConstants as tele_const
-from utils import execute_query
+from utils import execute_query, get_data_js
 
 
 class TelegramBot(threading.Thread):
@@ -60,6 +60,11 @@ class TelegramBot(threading.Thread):
         self.dispatcher.add_handler(CommandHandler('showsubscriptions',
                                                    self.list_all_regions))
 
+        self.dispatcher.add_handler(CommandHandler('sources',
+                                                   self.cmd_sources))
+        self.dispatcher.add_handler(CommandHandler('caseinfo',
+                                                   self.cmd_caseinfo))
+
         # Adding a Callback-handler for handling subscriptions and other
         # inline-keyboard elements
         self.dispatcher.add_handler(CallbackQueryHandler(self.command_handler))
@@ -69,7 +74,14 @@ class TelegramBot(threading.Thread):
         self.scheduler = BackgroundScheduler()
 
         # Run the job every day at 8 am
+        # this job checks for updates in the database and sends messages to
+        # the users
         self.scheduler.add_job(self.pull_updates, 'cron', hour="8", minute="0")
+
+        # this job clears the cached information from the covid dashbaord
+        # this will be cleared every hour.
+        self.scheduler.add_job(get_data_js.cache_clear, 'cron',
+                               minute="0", seconds="0")
         self.scheduler.start()
 
         # connect to the database
@@ -254,6 +266,88 @@ class TelegramBot(threading.Thread):
 
         context.bot.send_message(chat_id=user_id,
                                  text=tele_const.START_MESSAGE,
+                                 parse_mode=telegram.ParseMode.HTML)
+
+    def cmd_sources(self, update, context):
+        '''Inform the user about the used data-sources'''
+        # Get some variables of the chat message and the user for later use and
+        # logging
+        user_name = update.message.chat.username
+        message = update.message.text
+        user_id = update.effective_chat.id
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+
+        context.bot.send_message(chat_id=user_id,
+                                 text=tele_const.SOURCES_URLS,
+                                 disable_web_page_preview=True,
+                                 parse_mode=telegram.ParseMode.HTML)
+
+    def cmd_caseinfo(self, update, context):
+        '''Used to inform about the current pandemic'''
+
+        # Get some variables of the chat message and the user for later use and
+        # logging
+
+        user_name = update.message.chat.username
+        message = update.message.text
+        user_id = update.effective_chat.id
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+        result_data = {}
+
+        # get the information from the dashboard
+        for url in const.EPIDEMIC_OVERVIEW_URLS:
+            request_result = get_data_js(const.DASHBOARD_URL_PREFIX + url)
+            result_data = dict(result_data, **request_result)
+
+        # store it in variables for later use
+        total_tests = result_data["dpGesTestungen"]
+        pos_tests_total = int(
+            result_data["dpPositivGetestet"].replace(
+                ".", ""))
+        confirmed_cases_quarantine = int(
+            result_data["dpBFNH"].replace(".", ""))
+        pos_tests_crr = int(
+            result_data["dpAktuelleErkrankungen"].replace(
+                ".", ""))
+        persons_hospital = pos_tests_crr - confirmed_cases_quarantine
+
+        avail_int_care = int(result_data["dpGesIBVerf"].replace(".", ""))
+
+        int_care_curr_use = int(result_data["dpGesIBBel"].replace(".", ""))
+        int_care_percent = result_data["dpAktuelleErkrankungen"]
+        avail_care = int(result_data["dpGesNBVerf"].replace(".", ""))
+        care_curr_use = int(result_data["dpGesNBBel"].replace(".", ""))
+        female = result_data["dpGeschlechtsverteilung"][0]["y"]
+        male = result_data["dpGeschlechtsverteilung"][1]["y"]
+        update_time = result_data["GesamtzahlTestungenVersion"].split("V")[0]
+        tests_perc = (100 / (pos_tests_total / pos_tests_crr))
+
+        int_care_percent = (100 / (avail_int_care / int_care_curr_use))
+        care_percent = (100 / (avail_care / care_curr_use))
+
+        # format the string accordingly
+        caseinfo = tele_const.EPIDEMIC_OVERVIEW.format(
+            tests_total=total_tests,
+            pos_tests_total=pos_tests_total,
+            pos_tests_curr=pos_tests_crr,
+            tests_perc=tests_perc,
+            hospital=persons_hospital,
+            avail_int_care=avail_int_care,
+            int_care_curr_use=int_care_curr_use,
+            int_care_percent=int_care_percent,
+            avail_care=avail_care,
+            care_percent=care_percent,
+            care_curr_use=care_curr_use,
+            female=female,
+            male=male,
+            update_time=update_time
+        )
+
+        # send the message to the user
+        context.bot.send_message(chat_id=user_id,
+                                 text=caseinfo,
                                  parse_mode=telegram.ParseMode.HTML)
 
     def subscribe_to_region(self, update, context):
