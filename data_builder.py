@@ -17,12 +17,12 @@ from constants import Logging as logg_const
 from utils import execute_query
 
 
-def create_database():
+def create_database(sql_path):
     """Creates the database connection and build the tables if necessary"""
 
     #  creation and connection to the database
     logging.info(logg_const.CREATING_DATABASE)
-    sqlite_connection = sqlite3.connect(const.DATABASE_FILE)
+    sqlite_connection = sqlite3.connect(sql_path)
     logging.info(logg_const.DATABASE_CREATED)
 
     #  building the tables if necessary
@@ -95,6 +95,8 @@ def insert_warnings(sql_connection, json_response):
 
             result = execute_query(sql_connection, check_warn)
 
+            if int(region['GKZ']) == 40101:
+                print(result)
             # TODO: This should be simplified, since there are quite a few
             # things identical
             if len(result) == 0:
@@ -154,8 +156,11 @@ def insert_warnings(sql_connection, json_response):
 def main():
     '''The main programmfunction, gats calles whenever the modul is run'''
 
+    with open(const.CONFIG_FILE, "r") as file:
+        configurations = json.loads(file.read())
+
     # create a database connection and build all the tables
-    database_con = create_database()
+    database_con = create_database(configurations["database_path"])
 
     json_response = get_corona_data()
 
