@@ -9,3 +9,6 @@ __pycache__/*
 
 # Ignore all log-files created while debugging
 *.log
+
+#Ignore folders need for organisation and their content
+static/*
