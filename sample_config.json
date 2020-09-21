@@ -1,3 +1,4 @@
 {
-  "telegram-token": "[INSERT TOKEN HERE]"  
+  "telegram-token": "[INSERT TOKEN HERE]",
+  "database_path": "[PATH TO THE DATABASE]"
 }
