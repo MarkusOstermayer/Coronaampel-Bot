@@ -38,6 +38,7 @@ CONFIG_FILE = "config.json"
 
 DATABASE_FILE = "corona_db.sqlite"
 
+TELEGRAM_BOT_LOG = "corona_bot_log_{date}.log"
 DATA_BUILDER_LOG = "corona_data_builder.log"
 
 ALERT_URL = {
@@ -113,7 +114,7 @@ class Database():
                   "(region_id, telegram) VALUES "
                   "({region_id}, 0);")
 
-    REGIONS_QUERY = ("select regions.id, regions.name "
+    REGIONS_QUERY = ("select regions.name, regions.id "
                      "from users, regions, subscriptions "
                      "where (subscriptions.regions_id = regions.id "
                      "and subscriptions.users_id = {user_id} "
@@ -175,6 +176,7 @@ class Database():
                             "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                             "region_id INTEGER, "
                             "telegram INTEGER);")
+
     GET_UPDATED_REGIONS = "select region_id from updates where telegram = 0;"
 
     GET_REGIONUPDATES = ("select regions.name, warnings.alert_level from "
@@ -183,6 +185,12 @@ class Database():
                          "warnings.regions_id = regions.id) "
                          "order by warnings.revision DESC "
                          "Limit 2;")
+
+    GET_REGIONUPDATES_ALL = ("select warnings.kw, warnings.alert_level from "
+                             "warnings , regions "
+                             "where (warnings.regions_id = {id} and "
+                             "warnings.regions_id = regions.id) "
+                             "order by warnings.revision ASC;")
     '''
     LOOKUP_REGION_SUBSCRIPTIONS = ("select subscriptions.users_id from "
                                    " subscriptions where "
@@ -203,13 +211,18 @@ class Database():
 class TelegramConstants():
     '''A class for storing telegram-constant values'''
     CMD_SUB = "/subscribe"
-    CMD_UNSUB = "//unsubscribe "
+    CMD_UNSUB = "/unsubscribe"
+    CMD_REGHISTORY = "/regionhistory"
 
     CMD_SUB_ARG = "a city or region"
-    CMD_UNSUB_ARG = "<all>"
+    CMD_UNSUB_ARG = "nothing or <all>"
+    CMD_REGHISTORY_ARG = "a city or region"
 
-    CMD_UNSUB_PREFIX = "unsubscribe"
-    CMD_SUB_PREFIX = "subscribe"
+    CMD_UNSUB_PREFIX = "Unsubscribe"
+    CMD_SUB_PREFIX = "Subscribe"
+    CMD_REGHISTORY_PREFIX = "Regionhistory"
+
+    CMD_PREFIX_CANCEL = "Cancel"
 
     START_MESSAGE = ("Hi 👋, these are the commends I know.\n"
                      "\n"
@@ -217,12 +230,12 @@ class TelegramConstants():
                      "/subscribe [Cityname] - "
                      "Used to register for an alert for a city\n"
                      "/unsubscribe or /unsubscribe all - "
-                     "Unsubscribe from one city or from all citys\n"
+                     "Unsubscribe from one city or from all city's\n"
                      "/showsubscriptions - Show all active subscriptions"
                      "\n\n"
                      "<b>Epidemic data</b>\n"
                      "/sources - get a list of sources that I use\n"
-                     "/caseinfo - get infos about the current situation")
+                     "/caseinfo - get info's about the current situation")
 
     SOURCES_URLS = (
         "I get my informations from the following Sources: \n"
@@ -230,7 +243,7 @@ class TelegramConstants():
         "Information about the current state of a region \n\n"
         "<a href=\"https://info.gesundheitsministerium.at/\">Amtliches "
         "Dashboard COVID19</a> - "
-        "Information about epidemic informations")
+        "Data about current epidemic")
 
     CMD_NOT_AVAILABLE = ("⚠️ Not available ⚠️\n"
                          "Oh no, it looks like the command is currently under"
@@ -239,15 +252,15 @@ class TelegramConstants():
 
     INV_ARG_CNT = ("I have problems understanding you🤔\n"
                    "Please note, that the command {cmd} uses "
-                   "{args} as argument 🙂")
+                   "{args} as argument(s) 🙂")
 
-    MULTIPLE_REGIONS = ("Hmmm, I found the following regions🤔\n"
+    MULTIPLE_REGIONS = ("Hmm, I found the following regions🤔\n"
                         "Just let me know what region you mean 😄\n")
 
-    NO_REGION_FOUND = ("Hmmm, I found no region called {region_name}🤔\n"
+    NO_REGION_FOUND = ("Hmm, I found no region called {region_name}🤔\n"
                        "Make sure you typed it correct 😄")
 
-    ALREADY_REGISTERED = ("Hmmm, it looks like you have already registered for"
+    ALREADY_REGISTERED = ("Hmm, it looks like you have already registered for"
                           " this region🤔\n")
 
     EPIDEMIC_OVERVIEW = (
@@ -271,9 +284,9 @@ class TelegramConstants():
         "The gender distribution is {female}% female & {male}% male\n\n"
         "Last update: {update_time}")
 
-    REGISTERED = "Okey, I have just registered you for {region_name} 😄"
+    REGISTERED = "Okay, I have just registered you for {region_name} 😄"
 
-    REGISTERED_REGIONS = "Okey, I found the following registrations 😄"
+    REGISTERED_REGIONS = "Okay, I found the following registrations 😄"
 
     NO_SUBSCRIPTIONS_FOUND = ("It looks like, that you do not have any "
                               "subscriptions jet😄")
@@ -290,7 +303,12 @@ class TelegramConstants():
 
     REGION_HIGHER_ALERT = ("🔴 Bad News! \n\n")
 
-    REGION_ALERT_BODY = ("{city_name} just went from alertlevel "
+    REGION_ALERT_BODY = ("{city_name} just went from alert-level "
                          "{level1} to {level2}\n"
                          "This means, the following restrictions apply for "
                          "this area:\n{url_link}")
+
+    CANCEL_OPERATION = ("Okay, I canceled the current operation 😄")
+
+    UNKNOWN_COMMAND = ("Sorry, I don't understand you 😕\n"
+                       "Please use /help to get a list of all my commands 😄")
