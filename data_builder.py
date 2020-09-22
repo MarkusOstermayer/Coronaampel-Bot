@@ -82,6 +82,8 @@ def insert_regions(sql_connection, json_response):
                 logg_const.INSERT_SUCCESS.format(
                     region_name=region['Name']))
 
+    return None
+
 
 def insert_warnings(sql_connection, json_response):
     '''Function to insert the warning-levels into the warning-table'''

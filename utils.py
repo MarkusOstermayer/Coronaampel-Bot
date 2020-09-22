@@ -43,7 +43,12 @@ def execute_query(connection, query):
     connection.commit()
     return result
 
+
 def region_cmd_buttons(sel_conn, query, cmd_prefix):
+    """
+    Returns a list of inlinekeyboardbuttons that are used to ask the users
+    about cities
+    """
     result = execute_query(sel_conn, query)
 
     # If the result-tuple is empty, than there are not regions
@@ -81,6 +86,7 @@ def region_cmd_buttons(sel_conn, query, cmd_prefix):
         # return the created list of buttons
         return region_keyboard
 
+
 def simple_js_parser(pagecontent):
     """
     Simple parsing-function for parsing js-data from the corona-dashboard
@@ -103,6 +109,7 @@ def simple_js_parser(pagecontent):
             line_data[1].strip(";"))
 
     return variables
+
 
 # Keep the data in the cache, which will get reset every hour
 @lru_cache(maxsize=32)
