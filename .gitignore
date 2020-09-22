@@ -1,11 +1,5 @@
-# exclude all sqlite-databases
-*.sqlite
-
-# Exclude the config
-config.json
-
 # Exclude the __pychache__ folder
-__pycache__/*
+telegram_bot/__pycache__/*
 
 # Ignore all log-files created while debugging
 *.log
