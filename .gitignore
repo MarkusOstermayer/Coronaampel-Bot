@@ -11,4 +11,4 @@ __pycache__/*
 *.log
 
 #Ignore folders need for organisation and their content
-static/*
+telegram_bot/static/*
