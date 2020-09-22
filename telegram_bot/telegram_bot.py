@@ -192,13 +192,13 @@ class TelegramBot(threading.Thread):
             response = tele_const.USER_SUBSCRIPTIONS
 
             for item in result:
-                warn_quarry = db_const.CHECK_WARNING.format(region_id=item[0])
+                warn_quarry = db_const.CHECK_WARNING.format(region_id=item[1])
                 warn_result = execute_query(
                     self.sqlite_connection, warn_quarry)
 
                 response += tele_const.LIST_REGION.format(
                     alert_level=const.ALERT_COLORS[warn_result[0][3]],
-                    region_name=item[1])
+                    region_name=item[0])
 
             context.bot.send_message(chat_id=user_id,
                                      text=response)
