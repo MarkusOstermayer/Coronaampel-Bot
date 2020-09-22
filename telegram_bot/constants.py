@@ -34,7 +34,7 @@ EPIDEMIC_OVERVIEW_URLS = [
     TOTAL_NORMAL_BEDS_URL,
 ]
 
-CONFIG_FILE = "config.json"
+CONFIG_FILE = "static/config.json"
 
 TELEGRAM_BOT_LOG = "corona_bot_log_{date}.log"
 DATA_BUILDER_LOG = "corona_data_builder.log"

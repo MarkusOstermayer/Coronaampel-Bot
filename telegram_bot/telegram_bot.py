@@ -30,6 +30,14 @@ import utils
 from utils import execute_query, get_data_js
 
 
+def get_username(chat):
+    items = [chat.first_name, chat.last_name]
+    username = ""
+    for item in items:
+        if item is not None:
+            username += str(item)
+
+    return username
 class TelegramBot(threading.Thread):
     '''Class for the telegram-bot'''
 
@@ -98,7 +106,7 @@ class TelegramBot(threading.Thread):
         # Get some variables of the chat message and the user for later use and
         # logging
 
-        user_name = update.message.chat.username
+        user_name = get_username(update.message.chat)
         message = update.message.text
         user_id = update.effective_chat.id
         logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
@@ -165,7 +173,7 @@ class TelegramBot(threading.Thread):
         the available commands
         '''
 
-        user_name = update.message.chat.username
+        user_name = get_username(update.message.chat)
         message = update.message.text
         user_id = update.effective_chat.id
         logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
@@ -178,7 +186,7 @@ class TelegramBot(threading.Thread):
     def cmd_list_regions(self, update, context):
         '''Lists all the regions the user has subscribed to'''
 
-        user_name = update.message.chat.username
+        user_name = get_username(update.message.chat)
         message = update.message.text
         user_id = update.effective_chat.id
         logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
@@ -211,7 +219,7 @@ class TelegramBot(threading.Thread):
         '''Inform the user about the used data-sources'''
         # Get some variables of the chat message and the user for later use and
         # logging
-        user_name = update.message.chat.username
+        user_name = get_username(update.message.chat)
         message = update.message.text
         user_id = update.effective_chat.id
         logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
@@ -229,7 +237,7 @@ class TelegramBot(threading.Thread):
         # Get some variables of the chat message and the user for later use and
         # logging
 
-        user_name = update.message.chat.username
+        user_name = get_username(update.message.chat)
         message = update.message.text
         user_id = update.effective_chat.id
         logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
@@ -272,7 +280,7 @@ class TelegramBot(threading.Thread):
         '''
 
         # Safe some variables and log the message the user send
-        user_name = update.message.chat.username
+        user_name = get_username(update.message.chat)
         message = update.message.text
         user_id = update.effective_chat.id
 
@@ -285,7 +293,7 @@ class TelegramBot(threading.Thread):
                                  text=tele_const.CMD_NOT_AVAILABLE)
 
     def cmd_unknown_command(self, update, context):
-        user_name = update.message.chat.username
+        user_name = get_username(update.message.chat)
         message = update.message.text
         user_id = update.effective_chat.id
         logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
@@ -297,7 +305,7 @@ class TelegramBot(threading.Thread):
     def cmd_unsubscribe(self, update, context):
         '''Lets the user unsubscribe from regions'''
 
-        user_name = update.message.chat.username
+        user_name = get_username(update.message.chat)
         message = update.message.text
         user_id = update.effective_chat.id
         logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
@@ -352,8 +360,7 @@ class TelegramBot(threading.Thread):
         # use
         query = update.callback_query
         user_id = update.effective_chat.id
-        username = update.callback_query.message.chat.username
-
+        username = get_username(update.callback_query.message.chat)
         # CallbackQueries need to be answered, even if no notification to the
         # user is needed
         # Some clients may have trouble otherwise. See https://
