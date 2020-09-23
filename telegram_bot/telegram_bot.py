@@ -38,6 +38,8 @@ def get_username(chat):
             username += str(item)
 
     return username
+
+
 class TelegramBot(threading.Thread):
     '''Class for the telegram-bot'''
 
