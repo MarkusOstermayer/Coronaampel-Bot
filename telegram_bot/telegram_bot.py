@@ -27,7 +27,7 @@ from constants import Logging as logg_const
 from constants import TelegramConstants as tele_const
 import data_builder
 import utils
-from utils import execute_query, get_data_js
+from utils import execute_query, get_data_js, string_assembler
 
 
 def get_username(chat):
@@ -74,6 +74,11 @@ class TelegramBot(threading.Thread):
                                                    self.cmd_sources))
         self.dispatcher.add_handler(CommandHandler('subscribe',
                                                    self.cmd_subscribe))
+        self.dispatcher.add_handler(CommandHandler('agedistribution',
+                                                   self.cmd_age_distribution))
+        self.dispatcher.add_handler(CommandHandler('regiondistribution',
+                                                   self.cmd_region_distribution
+                                                   ))
         self.dispatcher.add_handler(CommandHandler(
             'unsubscribe',
             self.cmd_unsubscribe))
@@ -169,6 +174,70 @@ class TelegramBot(threading.Thread):
                                  text=caseinfo,
                                  parse_mode=telegram.ParseMode.HTML)
 
+    def cmd_age_distribution(self, update, context):
+        '''Used to display informations about the current agedistribution'''
+        user_name = get_username(update.message.chat)
+        message = update.message.text
+        user_id = update.effective_chat.id
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+
+        # get some variables for easier logging
+        age_dist_url = const.DASHBOARD_URL_PREFIX + const.AGE_DISTRIBUTION
+        age_data = get_data_js(age_dist_url)
+
+        # get the current region-data and number of infected people
+        cur_infected_url = const.DASHBOARD_URL_PREFIX + \
+                           const.CURRENT_POSITIV_URL
+        cur_infected_data = get_data_js(cur_infected_url)
+
+        # preprozess the number of currently infected persons
+        total_infected = cur_infected_data["dpAktuelleErkrankungen"]\
+                         .replace(".","")
+        total_infected = int(total_infected)
+
+        # assemble the string
+        response_str = string_assembler(age_data["dpAltersverteilung"],
+                                        age_data["AltersverteilungVersion"],
+                                        total_infected)
+
+
+        context.bot.send_message(chat_id=user_id,
+                                 text=response_str)
+
+    def cmd_region_distribution(self, update, context):
+        '''Used to display informations about the current statedistribution'''
+
+        # get some variables for easier logging
+        user_name = get_username(update.message.chat)
+        message = update.message.text
+        user_id = update.effective_chat.id
+        logging.info(logg_const.USER_SEND_MSG.format(username=user_name,
+                                                     msg=message))
+
+        # get the current region-data and number of infected people
+        reg_dist_url = const.DASHBOARD_URL_PREFIX + const.REGION_DISTRIBUTION
+        region_data = get_data_js(reg_dist_url)
+
+        cur_infected_url = const.DASHBOARD_URL_PREFIX + \
+                           const.CURRENT_POSITIV_URL
+        cur_infected_data = get_data_js(cur_infected_url)
+
+        # preprozess the number of currently infected persons
+        total_infected = cur_infected_data["dpAktuelleErkrankungen"]\
+                         .replace(".","")
+        total_infected = int(total_infected)
+
+        # assemble the string
+        response_str = string_assembler(region_data["dpBundesland"],
+                                        region_data["BundeslandVersion"],
+                                        total_infected,
+                                        lookup=const.REGION_TRANSLATION,
+                                        ordered=True)
+
+
+        context.bot.send_message(chat_id=user_id,
+                                 text=response_str)
     def cmd_help(self, update, context):
         '''
         Starts the messaging with the user and tells him about the bot and

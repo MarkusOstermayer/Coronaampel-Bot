@@ -20,6 +20,20 @@ USED_INTENSIVE_CARE_BEDS_URL = "GesamtzahlIntensivBettenBel.js"
 TOTAL_INTENSIVE_CARE_BEDS_URL = "GesamtzahlIntensivbettenVerf.js"
 USED_NORMAL_BEDS_URL = "GesamtzahlNormalbettenBel.js"
 TOTAL_NORMAL_BEDS_URL = "GesamtzahlNormalbettenVerf.js"
+AGE_DISTRIBUTION = "Altersverteilung.js"
+REGION_DISTRIBUTION = "Bundesland.js"
+
+
+REGION_TRANSLATION = {"W": "Wien",
+                      "V":"Vorarlberg",
+                      "T": "Tirol",
+                      "Stmk":"Steiermark",
+                      "Sbg": "Salzburg",
+                      "OÖ":"Öberösterreich",
+                      "NÖ": "Niederösterreich",
+                      "Ktn": "Kärnten",
+                      "Bgld": "Burgenland"}
+
 
 EPIDEMIC_OVERVIEW_URLS = [
     TOTAL_TESTS_URL,
@@ -233,7 +247,11 @@ class TelegramConstants():
                      "\n\n"
                      "<b>Epidemic data</b>\n"
                      "/sources - get a list of sources that I use\n"
-                     "/caseinfo - get info's about the current situation")
+                     "/caseinfo - get info's about the current situation\n"
+                     "/agedistribution - information about the "
+                     "agedistribution of the infected persons\n"
+                     "/regiondistribution - information about the "
+                     "distribution of currently infected persons by state")
 
     SOURCES_URLS = (
         "I get my informations from the following Sources: \n"
