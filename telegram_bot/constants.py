@@ -53,8 +53,8 @@ EPIDEMIC_OVERVIEW_URLS = [
 
 CONFIG_FILE = "static/config.json"
 
-TELEGRAM_BOT_LOG = "corona_bot_log_{date}.log"
-DATA_BUILDER_LOG = "corona_data_builder.log"
+TELEGRAM_BOT_LOG = "static/corona_bot_log_{date}.log"
+DATA_BUILDER_LOG = "static/corona_data_builder_{date}.log"
 
 ALERT_URL = {
     1: "https://corona-ampel.gv.at/ampelfarben/geringes-risiko-gruen/",
