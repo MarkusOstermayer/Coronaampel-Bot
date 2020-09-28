@@ -28,11 +28,11 @@ REGION_DISTRIBUTION = "Bundesland.js"
 
 
 REGION_TRANSLATION = {"W": "Wien",
-                      "V":"Vorarlberg",
+                      "V": "Vorarlberg",
                       "T": "Tirol",
-                      "Stmk":"Steiermark",
+                      "Stmk": "Steiermark",
                       "Sbg": "Salzburg",
-                      "OÖ":"Öberösterreich",
+                      "OÖ": "Öberösterreich",
                       "NÖ": "Niederösterreich",
                       "Ktn": "Kärnten",
                       "Bgld": "Burgenland"}
@@ -104,6 +104,7 @@ class Logging():
                        "the database, skipping changes ...")
     TIMESTAMP_NOT_IN_DB = ("This update timestamp {datetimestring} is not in "
                            "the database, ingesting ...")
+
 
 class Database():
     '''Used for inserting and Loggging database events'''
@@ -186,8 +187,8 @@ class Database():
                           "name TEXT);")
 
     CREATE_TABLE_UPDATE_TIMES = ("CREATE TABLE IF NOT EXISTS update_times"
-                                "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                                "time_str TIMESTAMP);")
+                                 "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                                 "time_str TIMESTAMP);")
 
     CREATE_SUBSCRIPTIONS_TABLE = ("CREATE TABLE IF NOT EXISTS subscriptions ( "
                                   "id INTEGER PRIMARY KEY AUTOINCREMENT, "

@@ -59,6 +59,8 @@ def get_corona_data(url):
 def insert_regions(sql_connection, json_response):
     '''Function to insert the region-data into the region-table'''
 
+    new_regions_found = False
+
     # check if the number of entrys in the database matches the number of
     # entrys in the response
     lookup_regioncount = "Select Count(*) from regions"
@@ -69,19 +71,21 @@ def insert_regions(sql_connection, json_response):
         # there is nothing to ingest
         if lookup_result[0][0] == len(json_response["Regionen"]):
             logging.info(logg_const.NO_NEW_REGIONS)
-            return
+
+            return new_regions_found
+        else:
+            new_regions_found = True
 
     logging.info(logg_const.NEW_REGIONS)
 
     # iterate over all items in the regions-set, this contains Bundesländer,
     # Gemeinden, Bezirke
     for region in json_response["Regionen"]:
+
+        # check if the region already exists in the database
         region_check = db_const.REGION_CHECK.format(id=int(region['GKZ']),
                                                     type=region['Region'],
                                                     name=region['Name'])
-
-        # check if the region already exists in the database
-
         result = execute_query(sql_connection, region_check)
 
         # if not, it will be inserted
@@ -106,16 +110,12 @@ def insert_warnings(sql_connection, json_response, reverse_order=False):
     '''Function to insert the warning-levels into the warning-table'''
 
     inserted_warnings = False
-
     update_nr = len(json_response)
 
-
-
     if reverse_order:
-        update_number_enumerator = reversed(range(0,update_nr))
+        update_number_enumerator = reversed(range(0, update_nr))
     else:
-        update_number_enumerator = range(0,update_nr)
-
+        update_number_enumerator = range(0, update_nr)
 
     for update_number in update_number_enumerator:
 
@@ -129,14 +129,11 @@ def insert_warnings(sql_connection, json_response, reverse_order=False):
         result = execute_query(sql_connection, lookup_quary)
 
         if result[0][0] >= 1:
-            print(result[0][0])
             # if the timestamp is in the database, continue with the next one
             logging.info(logg_const.TIMESTAMP_IN_DB.format(
                             datetimestring=datestring))
             continue
         else:
-            print(result[0][0])
-            
             # if not, it needs to be ingested and the updates need to be put
             # into the db
             logging.info(logg_const.TIMESTAMP_NOT_IN_DB.format(
@@ -164,8 +161,9 @@ def insert_warnings(sql_connection, json_response, reverse_order=False):
                 level = int(region['Warnstufe'])
                 region_id = int(region['GKZ'])
 
-                date = datetime.datetime.strptime(datestring,
-                    "%Y-%m-%dT%H:%M:%S%z").date()
+                date = datetime.datetime.strptime(
+                        datestring,
+                        "%Y-%m-%dT%H:%M:%S%z").date()
                 kw = date.isocalendar()[1]
 
                 # Insert the first revision of the region to the database,
@@ -186,8 +184,10 @@ def insert_warnings(sql_connection, json_response, reverse_order=False):
                     level = int(region['Warnstufe'])
                     region_id = int(region['GKZ'])
 
-                    date = datetime.datetime.strptime(datestring,
-                        "%Y-%m-%dT%H:%M:%S%z").date()
+                    date = datetime.datetime.strptime(
+                            datestring,
+                            "%Y-%m-%dT%H:%M:%S%z").date()
+
                     kw = date.isocalendar()[1]
 
                     rev = result[0][0] + 1
@@ -207,7 +207,10 @@ def insert_warnings(sql_connection, json_response, reverse_order=False):
                         region_id=region_id)
                     execute_query(sql_connection, add_update)
 
+                inserted_warnings = True
+
     return inserted_warnings
+
 
 def main():
     '''The main programmfunction, gats calles whenever the modul is run'''
@@ -223,8 +226,6 @@ def main():
 
     json_warnings = get_corona_data(const.WARNSTUFEN_AKTUELL)
     inserted_warnings = insert_warnings(database_con, json_warnings)
-
-    print(inserted_warnings)
 
     # close the database connection
     database_con.close()

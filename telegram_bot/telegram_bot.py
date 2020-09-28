@@ -16,7 +16,7 @@ import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import telegram
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
 from telegram.ext import Filters, Updater
 
@@ -191,15 +191,15 @@ class TelegramBot(threading.Thread):
         infected_data = get_data_js(infected_url)
 
         # preprocess the number of currently infected persons
-        total_infected = infected_data["dpAktuelleErkrankungen"]\
-                         .replace(".","")
+        print(infected_data,age_data)
+        total_infected = infected_data["dpPositivGetestet"]\
+            .replace(".", "")
         total_infected = int(total_infected)
 
         # assemble the string
         response_str = string_assembler(age_data["dpAltersverteilung"],
                                         age_data["AltersverteilungVersion"],
                                         total_infected)
-
 
         context.bot.send_message(chat_id=user_id,
                                  text=response_str)
@@ -219,12 +219,14 @@ class TelegramBot(threading.Thread):
         region_data = get_data_js(reg_dist_url)
 
         cur_infected_url = const.DASHBOARD_URL_PREFIX + \
-                           const.CURRENT_POSITIV_URL
+            const.CURRENT_POSITIV_URL
+
         cur_infected_data = get_data_js(cur_infected_url)
 
         # preprozess the number of currently infected persons
         total_infected = cur_infected_data["dpAktuelleErkrankungen"]\
-                         .replace(".","")
+            .replace(".", "")
+
         total_infected = int(total_infected)
 
         # assemble the string
@@ -234,9 +236,9 @@ class TelegramBot(threading.Thread):
                                         lookup=const.REGION_TRANSLATION,
                                         ordered=True)
 
-
         context.bot.send_message(chat_id=user_id,
                                  text=response_str)
+
     def cmd_help(self, update, context):
         '''
         Starts the messaging with the user and tells him about the bot and

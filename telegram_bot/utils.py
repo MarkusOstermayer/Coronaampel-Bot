@@ -66,19 +66,21 @@ def region_cmd_buttons(sel_conn, query, cmd_prefix):
             # create a command that is send back to the callbacl quary handler
             # and gets prozessed there
             command = "{cmd_prefix}_{name}_{id}".format(cmd_prefix=cmd_prefix,
-                name=str(item[1]), id=str(item[0]))
+                                                        name=str(item[1]),
+                                                        id=str(item[0]))
 
             # with the command create the button with the name of the region
             # as button text
             button = InlineKeyboardButton(text=str(item[0]),
-                callback_data=command)
+                                          callback_data=command)
 
             # append the button to the list of buttons
             region_keyboard.append([button])
 
         # add a button to cancel the current operation
-        button = InlineKeyboardButton(text=tele_const.CMD_PREFIX_CANCEL,
-            callback_data=tele_const.CMD_PREFIX_CANCEL)
+        button = InlineKeyboardButton(
+                    text=tele_const.CMD_PREFIX_CANCEL,
+                    callback_data=tele_const.CMD_PREFIX_CANCEL)
 
         # append the button to the list of buttons
         region_keyboard.append([button])
@@ -110,8 +112,9 @@ def simple_js_parser(pagecontent):
 
     return variables
 
-def string_assembler(data, version_date, total, lookup=None, ordered = False,
-                    max_lable_alignment=5):
+
+def string_assembler(data, version_date, total, lookup=None, ordered=False,
+                     max_lable_alignment=5):
     '''Used to create a textstring which represends numeric data'''
 
     # create the output-string
@@ -129,8 +132,9 @@ def string_assembler(data, version_date, total, lookup=None, ordered = False,
         # cretae a lsit out of the dict and insert-sort the data
         # ref. https://stackoverflow.com/questions/613183/how-do-i-sort-a-
         # dictionary-by-value
-        data = [{"label": k, "y" : v} for k, v in sorted(new_dict.items(),
-            key=lambda item: item[1])]
+        data = [{"label": k, "y": v} for k, v in sorted(
+                new_dict.items(),
+                key=lambda item: item[1])]
 
     # Check if a lookup-dict has to be used in order to translate the keys
     if lookup is None:
@@ -160,12 +164,13 @@ def string_assembler(data, version_date, total, lookup=None, ordered = False,
         # calculate the percentage-value
         percent = (100 / (total / int(item["y"])))
         # build the string and append it to the rest
-        o_str += "{}: {:>5} ({:>4.2f}%)\n".format(label,item["y"], percent)
+        o_str += "{}: {:>5} ({:>4.2f}%)\n".format(label, item["y"], percent)
 
     # append a versionnumber
     o_str += "Version: {}".format(version_date.split("V")[0])
 
     return o_str
+
 
 # Keep the data in the cache, which will get reset every hour
 @lru_cache(maxsize=32)
