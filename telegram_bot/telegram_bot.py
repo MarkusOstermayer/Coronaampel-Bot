@@ -16,7 +16,7 @@ import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import telegram
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
 from telegram.ext import Filters, Updater
 
@@ -187,20 +187,19 @@ class TelegramBot(threading.Thread):
         age_data = get_data_js(age_dist_url)
 
         # get the current region-data and number of infected people
-        cur_infected_url = const.DASHBOARD_URL_PREFIX + \
-                           const.CURRENT_POSITIV_URL
-        cur_infected_data = get_data_js(cur_infected_url)
+        infected_url = const.DASHBOARD_URL_PREFIX + const.TOTAL_POSITIV_URL
+        infected_data = get_data_js(infected_url)
 
-        # preprozess the number of currently infected persons
-        total_infected = cur_infected_data["dpAktuelleErkrankungen"]\
-                         .replace(".","")
+        # preprocess the number of currently infected persons
+        print(infected_data,age_data)
+        total_infected = infected_data["dpPositivGetestet"]\
+            .replace(".", "")
         total_infected = int(total_infected)
 
         # assemble the string
         response_str = string_assembler(age_data["dpAltersverteilung"],
                                         age_data["AltersverteilungVersion"],
                                         total_infected)
-
 
         context.bot.send_message(chat_id=user_id,
                                  text=response_str)
@@ -220,12 +219,22 @@ class TelegramBot(threading.Thread):
         region_data = get_data_js(reg_dist_url)
 
         cur_infected_url = const.DASHBOARD_URL_PREFIX + \
+<<<<<<< HEAD
                            const.CURRENT_POSITIV_URL
+=======
+            const.CURRENT_POSITIV_URL
+
+>>>>>>> master
         cur_infected_data = get_data_js(cur_infected_url)
 
         # preprozess the number of currently infected persons
         total_infected = cur_infected_data["dpAktuelleErkrankungen"]\
+<<<<<<< HEAD
                          .replace(".","")
+=======
+            .replace(".", "")
+
+>>>>>>> master
         total_infected = int(total_infected)
 
         # assemble the string
@@ -235,9 +244,15 @@ class TelegramBot(threading.Thread):
                                         lookup=const.REGION_TRANSLATION,
                                         ordered=True)
 
+<<<<<<< HEAD
 
         context.bot.send_message(chat_id=user_id,
                                  text=response_str)
+=======
+        context.bot.send_message(chat_id=user_id,
+                                 text=response_str)
+
+>>>>>>> master
     def cmd_help(self, update, context):
         '''
         Starts the messaging with the user and tells him about the bot and

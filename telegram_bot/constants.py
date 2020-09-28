@@ -10,6 +10,9 @@ CORONAKOMMISSIONV2 = ("https://corona-ampel.gv.at"
                       "/sites/corona-ampel.gv.at/files/coronadata/"
                       "CoronaKommissionV2.json")
 
+WARNSTUFEN_AKTUELL = ("https://corona-ampel.gv.at/sites/corona-ampel.gv.at/"
+                      "files/assets/Warnstufen_Corona_Ampel_aktuell.json")
+
 DASHBOARD_URL_PREFIX = "https://info.gesundheitsministerium.at/data/"
 TOTAL_TESTS_URL = "GesamtzahlTestungen.js"
 TOTAL_POSITIV_URL = "PositivGetestet.js"
@@ -25,11 +28,19 @@ REGION_DISTRIBUTION = "Bundesland.js"
 
 
 REGION_TRANSLATION = {"W": "Wien",
+<<<<<<< HEAD
                       "V":"Vorarlberg",
                       "T": "Tirol",
                       "Stmk":"Steiermark",
                       "Sbg": "Salzburg",
                       "OÖ":"Öberösterreich",
+=======
+                      "V": "Vorarlberg",
+                      "T": "Tirol",
+                      "Stmk": "Steiermark",
+                      "Sbg": "Salzburg",
+                      "OÖ": "Öberösterreich",
+>>>>>>> master
                       "NÖ": "Niederösterreich",
                       "Ktn": "Kärnten",
                       "Bgld": "Burgenland"}
@@ -93,6 +104,14 @@ class Logging():
     USER_SEND_MSG = "User {username} send the following message: {msg}"
 
     USER_UPDATE = "Inform {username} about the update in region {region_name}"
+
+    NO_NEW_REGIONS = "All regions are in the database, no need to ingest them"
+    NEW_REGIONS = "Missing regions found, check all Database-entrys"
+
+    TIMESTAMP_IN_DB = ("This update timestamp {datetimestring} is already in "
+                       "the database, skipping changes ...")
+    TIMESTAMP_NOT_IN_DB = ("This update timestamp {datetimestring} is not in "
+                           "the database, ingesting ...")
 
 
 class Database():
@@ -175,6 +194,10 @@ class Database():
                           "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                           "name TEXT);")
 
+    CREATE_TABLE_UPDATE_TIMES = ("CREATE TABLE IF NOT EXISTS update_times"
+                                 "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                                 "time_str TIMESTAMP);")
+
     CREATE_SUBSCRIPTIONS_TABLE = ("CREATE TABLE IF NOT EXISTS subscriptions ( "
                                   "id INTEGER PRIMARY KEY AUTOINCREMENT, "
                                   "users_id INTEGER, "
@@ -208,6 +231,12 @@ class Database():
                                    " subscriptions where "
                                    "subscriptions.regions_id = {region_id}")
     '''
+
+    LOOKUP_UPDATE_TIME = ("select count(*) from update_times where "
+                          "time_str='{datetimestring}';")
+
+    INSERT_UPDATE_TIME = ("insert into update_times (time_str) VALUES "
+                          "('{datetimestring}');")
 
     LOOKUP_REGION_SUBSCRIPTIONS = ("select subscriptions.users_id, "
                                    "users.name  from subscriptions, users "

@@ -66,19 +66,21 @@ def region_cmd_buttons(sel_conn, query, cmd_prefix):
             # create a command that is send back to the callbacl quary handler
             # and gets prozessed there
             command = "{cmd_prefix}_{name}_{id}".format(cmd_prefix=cmd_prefix,
-                name=str(item[1]), id=str(item[0]))
+                                                        name=str(item[1]),
+                                                        id=str(item[0]))
 
             # with the command create the button with the name of the region
             # as button text
             button = InlineKeyboardButton(text=str(item[0]),
-                callback_data=command)
+                                          callback_data=command)
 
             # append the button to the list of buttons
             region_keyboard.append([button])
 
         # add a button to cancel the current operation
-        button = InlineKeyboardButton(text=tele_const.CMD_PREFIX_CANCEL,
-            callback_data=tele_const.CMD_PREFIX_CANCEL)
+        button = InlineKeyboardButton(
+                    text=tele_const.CMD_PREFIX_CANCEL,
+                    callback_data=tele_const.CMD_PREFIX_CANCEL)
 
         # append the button to the list of buttons
         region_keyboard.append([button])
@@ -166,6 +168,65 @@ def string_assembler(data, version_date, total, lookup=None, ordered = False,
     o_str += "Version: {}".format(version_date)
 
     return o_str
+
+def string_assembler(data, version_date, total, lookup=None, ordered=False,
+                     max_lable_alignment=5):
+    '''Used to create a textstring which represends numeric data'''
+
+    # create the output-string
+    o_str = ""
+
+    # check if the data has to be ordered by value
+    if ordered:
+        # create a dict out of key and data
+        new_dict = {}
+
+        # fill the dict
+        for item in data:
+            new_dict[item["label"]] = item["y"]
+
+        # cretae a lsit out of the dict and insert-sort the data
+        # ref. https://stackoverflow.com/questions/613183/how-do-i-sort-a-
+        # dictionary-by-value
+        data = [{"label": k, "y": v} for k, v in sorted(
+                new_dict.items(),
+                key=lambda item: item[1])]
+
+    # Check if a lookup-dict has to be used in order to translate the keys
+    if lookup is None:
+        # check what the longest lable in the list is
+        max_lable_len = max([len(x["label"]) for x in data])
+    else:
+        # if so, check what the maximal linelenth is according to the
+        # lookup-dict
+        max_lable_len = max([len(x) for x in lookup.values()])
+
+    # check ig the max_linelength is greater than the maximum alignment
+    if max_lable_len > max_lable_alignment:
+        max_lable_len = max_lable_alignment
+
+    # iterate over each subdict
+    for item in data:
+        # check if the lable ahs to be translated
+        if lookup is None:
+            label = item["label"]
+
+        else:
+            label = lookup[item["label"]]
+
+        # ajust the textallignment according to the max lablenegth
+
+        label = label.ljust(max_lable_len)
+        # calculate the percentage-value
+        percent = (100 / (total / int(item["y"])))
+        # build the string and append it to the rest
+        o_str += "{}: {:>5} ({:>4.2f}%)\n".format(label, item["y"], percent)
+
+    # append a versionnumber
+    o_str += "Version: {}".format(version_date.split("V")[0])
+
+    return o_str
+
 
 # Keep the data in the cache, which will get reset every hour
 @lru_cache(maxsize=32)
