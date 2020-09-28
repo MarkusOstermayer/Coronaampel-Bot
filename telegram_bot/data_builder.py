@@ -5,6 +5,7 @@
 A Programm to ingest covid19 region-data into a sqlite-database for later use
 """
 
+import datetime
 import json
 import logging
 import sqlite3
@@ -33,6 +34,7 @@ def create_database(sql_path):
     execute_query(sqlite_connection, db_const.CREATE_USERS_TABLE)
     execute_query(sqlite_connection, db_const.CREATE_SUBSCRIPTIONS_TABLE)
     execute_query(sqlite_connection, db_const.CREATE_UPDATES_TABLE)
+    execute_query(sqlite_connection, db_const.CREATE_TABLE_UPDATE_TIMES)
 
     logging.info(logg_const.TABLES_CREATED)
 
@@ -40,11 +42,12 @@ def create_database(sql_path):
     return sqlite_connection
 
 
-def get_corona_data():
+def get_corona_data(url):
     '''Get the data provided by the corona-ampel json file'''
 
     # create a get-request to the server to get the file
-    req = requests.get(const.CORONAKOMMISSIONV2)
+    req = requests.get(url)
+
     # read it and pare it as a text-file
     response_json = req.text
     json_response = json.loads(response_json)
@@ -55,6 +58,20 @@ def get_corona_data():
 
 def insert_regions(sql_connection, json_response):
     '''Function to insert the region-data into the region-table'''
+
+    # check if the number of entrys in the database matches the number of
+    # entrys in the response
+    lookup_regioncount = "Select Count(*) from regions"
+    lookup_result = execute_query(sql_connection, lookup_regioncount)
+
+    if lookup_result is not None:
+        # if the result matches the number of regons in the file, than
+        # there is nothing to ingest
+        if lookup_result[0][0] == len(json_response["Regionen"]):
+            logging.info(logg_const.NO_NEW_REGIONS)
+            return
+
+    logging.info(logg_const.NEW_REGIONS)
 
     # iterate over all items in the regions-set, this contains Bundesländer,
     # Gemeinden, Bezirke
@@ -85,11 +102,50 @@ def insert_regions(sql_connection, json_response):
     return None
 
 
-def insert_warnings(sql_connection, json_response):
+def insert_warnings(sql_connection, json_response, reverse_order=False):
     '''Function to insert the warning-levels into the warning-table'''
 
-    for week in json_response['Kalenderwochen']:
-        for region in week["Warnstufen"]:
+    inserted_warnings = False
+
+    update_nr = len(json_response)
+
+
+
+    if reverse_order:
+        update_number_enumerator = reversed(range(0,update_nr))
+    else:
+        update_number_enumerator = range(0,update_nr)
+
+
+    for update_number in update_number_enumerator:
+
+        # get the date fromt he warningentry
+        datestring = json_response[update_number]["Stand"]
+
+        # check if the timestamp is already in the database
+        lookup_quary = db_const.LOOKUP_UPDATE_TIME.format(
+            datetimestring=datestring)
+
+        result = execute_query(sql_connection, lookup_quary)
+
+        if result[0][0] >= 1:
+            print(result[0][0])
+            # if the timestamp is in the database, continue with the next one
+            logging.info(logg_const.TIMESTAMP_IN_DB.format(
+                            datetimestring=datestring))
+            continue
+        else:
+            print(result[0][0])
+            
+            # if not, it needs to be ingested and the updates need to be put
+            # into the db
+            logging.info(logg_const.TIMESTAMP_NOT_IN_DB.format(
+                            datetimestring=datestring))
+            insert_quary = db_const.INSERT_UPDATE_TIME.format(
+                datetimestring=datestring)
+            execute_query(sql_connection, insert_quary)
+
+        for region in json_response[update_number]["Warnstufen"]:
             # Prepared statement to check if the region is already in the table
             # and order by desc revision to get the latest evrsion
 
@@ -97,8 +153,6 @@ def insert_warnings(sql_connection, json_response):
 
             result = execute_query(sql_connection, check_warn)
 
-            if int(region['GKZ']) == 40101:
-                print(result)
             # TODO: This should be simplified, since there are quite a few
             # things identical
             if len(result) == 0:
@@ -109,12 +163,10 @@ def insert_warnings(sql_connection, json_response):
                 reason = "Null"
                 level = int(region['Warnstufe'])
                 region_id = int(region['GKZ'])
-                kw = week['KW']
 
-                # check if a reason for the alert_level was given, if so,
-                # than set it
-                if region['Begruendung'] != '':
-                    reason = region['Begruendung']
+                date = datetime.datetime.strptime(datestring,
+                    "%Y-%m-%dT%H:%M:%S%z").date()
+                kw = date.isocalendar()[1]
 
                 # Insert the first revision of the region to the database,
                 # this is the starting-level
@@ -122,6 +174,8 @@ def insert_warnings(sql_connection, json_response):
                     revision=1, kw=kw, region_id=region_id, alert_level=level,
                     reason=reason)
                 execute_query(sql_connection, warning_data)
+
+                inserted_warnings = True
             else:
                 # It is already in the database, lets check if the warning
                 # has changed from last time inserting it
@@ -131,13 +185,12 @@ def insert_warnings(sql_connection, json_response):
                     reason = "Null"
                     level = int(region['Warnstufe'])
                     region_id = int(region['GKZ'])
-                    kw = week['KW']
-                    rev = result[0][0] + 1
 
-                    # check if a reason for the alert_level was given, if so,
-                    # than set it
-                    if region['Begruendung'] != '':
-                        reason = region['Begruendung']
+                    date = datetime.datetime.strptime(datestring,
+                        "%Y-%m-%dT%H:%M:%S%z").date()
+                    kw = date.isocalendar()[1]
+
+                    rev = result[0][0] + 1
 
                     # There is a new alert-level for the region, therefor we
                     # insert it with a new revision
@@ -154,6 +207,7 @@ def insert_warnings(sql_connection, json_response):
                         region_id=region_id)
                     execute_query(sql_connection, add_update)
 
+    return inserted_warnings
 
 def main():
     '''The main programmfunction, gats calles whenever the modul is run'''
@@ -164,10 +218,13 @@ def main():
     # create a database connection and build all the tables
     database_con = create_database(configurations["database_path"])
 
-    json_response = get_corona_data()
+    json_regions = get_corona_data(const.CORONAKOMMISSIONV2)
+    insert_regions(database_con, json_regions)
 
-    insert_regions(database_con, json_response)
-    insert_warnings(database_con, json_response)
+    json_warnings = get_corona_data(const.WARNSTUFEN_AKTUELL)
+    inserted_warnings = insert_warnings(database_con, json_warnings)
+
+    print(inserted_warnings)
 
     # close the database connection
     database_con.close()

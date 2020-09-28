@@ -187,12 +187,11 @@ class TelegramBot(threading.Thread):
         age_data = get_data_js(age_dist_url)
 
         # get the current region-data and number of infected people
-        cur_infected_url = const.DASHBOARD_URL_PREFIX + \
-                           const.CURRENT_POSITIV_URL
-        cur_infected_data = get_data_js(cur_infected_url)
+        infected_url = const.DASHBOARD_URL_PREFIX + const.TOTAL_POSITIV_URL
+        infected_data = get_data_js(infected_url)
 
-        # preprozess the number of currently infected persons
-        total_infected = cur_infected_data["dpAktuelleErkrankungen"]\
+        # preprocess the number of currently infected persons
+        total_infected = infected_data["dpAktuelleErkrankungen"]\
                          .replace(".","")
         total_infected = int(total_infected)
 

@@ -163,7 +163,7 @@ def string_assembler(data, version_date, total, lookup=None, ordered = False,
         o_str += "{}: {:>5} ({:>4.2f}%)\n".format(label,item["y"], percent)
 
     # append a versionnumber
-    o_str += "Version: {}".format(version_date)
+    o_str += "Version: {}".format(version_date.split("V")[0])
 
     return o_str
 
