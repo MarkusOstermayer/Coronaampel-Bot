@@ -28,19 +28,11 @@ REGION_DISTRIBUTION = "Bundesland.js"
 
 
 REGION_TRANSLATION = {"W": "Wien",
-<<<<<<< HEAD
-                      "V":"Vorarlberg",
-                      "T": "Tirol",
-                      "Stmk":"Steiermark",
-                      "Sbg": "Salzburg",
-                      "OÖ":"Öberösterreich",
-=======
                       "V": "Vorarlberg",
                       "T": "Tirol",
                       "Stmk": "Steiermark",
                       "Sbg": "Salzburg",
                       "OÖ": "Öberösterreich",
->>>>>>> master
                       "NÖ": "Niederösterreich",
                       "Ktn": "Kärnten",
                       "Bgld": "Burgenland"}
