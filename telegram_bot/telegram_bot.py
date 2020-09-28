@@ -191,7 +191,7 @@ class TelegramBot(threading.Thread):
         infected_data = get_data_js(infected_url)
 
         # preprocess the number of currently infected persons
-        print(infected_data,age_data)
+        
         total_infected = infected_data["dpPositivGetestet"]\
             .replace(".", "")
         total_infected = int(total_infected)
@@ -551,7 +551,7 @@ class TelegramBot(threading.Thread):
 
             lookup_result = execute_query(self.sqlite_connection,
                                           lookup_quarry)
-            print(lookup_result)
+
             # If the lookup does not yield any subscribed user, skip the
             # further lookup, since there is no user to inform
             if len(lookup_result) == 0:
