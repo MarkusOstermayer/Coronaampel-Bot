@@ -232,10 +232,11 @@ def main():
 
 
 if __name__ == "__main__":
+    log_filename = const.DATA_BUILDER_LOG.format(
+        date=datetime.datetime.date(datetime.datetime.now()))
+
     logging.basicConfig(format='%(asctime)s:%(levelname)s - %(message)s',
                         level=logging.INFO,
-                        handlers=[
-                            logging.FileHandler(const.DATA_BUILDER_LOG),
-                            logging.StreamHandler()
-                        ])
+                        handlers=[logging.FileHandler(log_filename),
+                                  logging.StreamHandler()])
     main()
