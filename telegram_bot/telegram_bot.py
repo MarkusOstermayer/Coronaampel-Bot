@@ -93,10 +93,11 @@ class TelegramBot(threading.Thread):
         # start a background scheduler for pulling updates from the database
         self.scheduler = BackgroundScheduler()
 
-        # Run the job every day at 8 am
+        # Run the job every hour at the two minute mark
         # this job checks for updates in the database and sends messages to
         # the users
-        self.scheduler.add_job(self.pull_updates, 'cron', hour="8", minute="0")
+        self.scheduler.add_job(self.pull_updates, 'cron',
+                               minute="2", second="0")
         # this job clears the cached information from the covid dashbaord
         # this will be cleared every hour.
         self.scheduler.add_job(get_data_js.cache_clear, 'cron',
@@ -106,7 +107,7 @@ class TelegramBot(threading.Thread):
         # connect to the database
         self.sqlite_connection = sqlite3.connect(sql_path,
                                                  check_same_thread=False)
-
+    
     def cmd_caseinfo(self, update, context):
         '''Used to inform about the current pandemic'''
 
@@ -191,7 +192,7 @@ class TelegramBot(threading.Thread):
         infected_data = get_data_js(infected_url)
 
         # preprocess the number of currently infected persons
-        
+
         total_infected = infected_data["dpPositivGetestet"]\
             .replace(".", "")
         total_infected = int(total_infected)
